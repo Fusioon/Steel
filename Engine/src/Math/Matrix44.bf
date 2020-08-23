@@ -43,19 +43,27 @@ namespace SteelEngine
 			columns = .(c1, c2, c3, c4);
 		}
 
+		public this(Matrix33<T> m)
+		{
+			columns[0] = .(m.columns[0], 0);
+			columns[1] = .(m.columns[1], 0);
+			columns[2] = .(m.columns[2], 0);
+			columns[3] = .(0, 0, 0, 1);
+		}
+
 		public T m00 { [Inline] get { return data[0]; } [Inline] set mut { data[0] = value; } }
 		public T m01 { [Inline] get { return data[1]; } [Inline] set mut { data[1] = value; } }
 		public T m02 { [Inline] get { return data[2]; } [Inline] set mut { data[2] = value; } }
 		public T m03 { [Inline] get { return data[3]; } [Inline] set mut { data[3] = value; } }
 
-		public T m10 { [Inline] get { return data[3]; } [Inline] set mut { data[4] = value; } }
-		public T m11 { [Inline] get { return data[4]; } [Inline] set mut { data[5] = value; } }
-		public T m12 { [Inline] get { return data[5]; } [Inline] set mut { data[6] = value; } }
+		public T m10 { [Inline] get { return data[4]; } [Inline] set mut { data[4] = value; } }
+		public T m11 { [Inline] get { return data[5]; } [Inline] set mut { data[5] = value; } }
+		public T m12 { [Inline] get { return data[6]; } [Inline] set mut { data[6] = value; } }
 		public T m13 { [Inline] get { return data[7]; } [Inline] set mut { data[7] = value; } }
 
-		public T m20 { [Inline] get { return data[6]; } [Inline] set mut { data[8] = value; } }
-		public T m21 { [Inline] get { return data[7]; } [Inline] set mut { data[9] = value; } }
-		public T m22 { [Inline] get { return data[8]; } [Inline] set mut { data[10] = value; } }
+		public T m20 { [Inline] get { return data[8]; } [Inline] set mut { data[8] = value; } }
+		public T m21 { [Inline] get { return data[9]; } [Inline] set mut { data[9] = value; } }
+		public T m22 { [Inline] get { return data[10]; } [Inline] set mut { data[10] = value; } }
 		public T m23 { [Inline] get { return data[11]; } [Inline] set mut { data[11] = value; } }
 
 		public T m30 { [Inline] get { return data[12]; } [Inline] set mut { data[12] = value; } }
@@ -86,12 +94,32 @@ namespace SteelEngine
 
 		public Self Inverse
 		{
-			[Error("Not implemented")]
 			get {
-				Self inverse = ?;
-				
-				// @TODO(fusion)
-				return inverse;
+				Self result = ?;
+
+				let invDet = 1f / Determinant;
+
+				result[0] = (m11*(m22*m33 - m32*m23) - m12*(m21*m33 - m31*m23) + m13*(m21*m32 - m31*m22) ) * invDet;
+				result[1] = -(m01*(m22*m33 - m32*m23) - m02*(m21*m33 - m31*m23) + m03*(m21*m32 - m31*m22) ) * invDet;
+				result[2] = (m01*(m12*m33 - m32*m13) - m02*(m11*m33 - m31*m13) + m03*(m11*m32 - m31*m12) ) * invDet;
+				result[3] = -(m01*(m12*m23 - m22*m13) - m02*(m11*m23 - m21*m13) + m03*(m11*m22 - m21*m12) ) * invDet;
+
+				result[4] = -(m10*(m22*m33 - m32*m23) - m12*(m20*m33 - m30*m23) + m13*(m20*m32 - m30*m22) ) * invDet;
+				result[5] = (m00*(m22*m33 - m32*m23) - m02*(m20*m33 - m30*m23) + m03*(m20*m32 - m30*m22) ) * invDet;
+				result[6] = -(m00*(m12*m33 - m32*m13) - m02*(m10*m33 - m30*m13) + m03*(m10*m32 - m30*m12) ) * invDet;
+				result[7] = (m00*(m12*m23 - m22*m13) - m02*(m10*m23 - m20*m13) + m03*(m10*m22 - m20*m12) ) * invDet;
+
+				result[8] = (m10*(m21*m33 - m31*m23) - m11*(m20*m33 - m30*m23) + m13*(m20*m31 - m30*m21) ) * invDet;
+				result[9] = -(m00*(m21*m33 - m31*m23) - m01*(m20*m33 - m30*m23) + m03*(m20*m31 - m30*m21) ) * invDet;
+				result[10] = (m00*(m11*m33 - m31*m13) - m01*(m10*m33 - m30*m13) + m03*(m10*m31 - m30*m11) ) * invDet;
+				result[11] = -(m00*(m11*m23 - m21*m13) - m01*(m10*m23 - m20*m13) + m03*(m10*m21 - m20*m11) ) * invDet;
+
+				result[12] = -(m10*(m21*m32 - m31*m22) - m11*(m20*m32 - m30*m22) + m12*(m20*m31 - m30*m21) ) * invDet;
+				result[13] = (m00*(m21*m32 - m31*m22) - m01*(m20*m32 - m30*m22) + m02*(m20*m31 - m30*m21) ) * invDet;
+				result[14] = -(m00*(m11*m32 - m31*m12) - m01*(m10*m32 - m30*m12) + m02*(m10*m31 - m30*m11) ) * invDet;
+				result[15] = (m00*(m11*m22 - m21*m12) - m01*(m10*m22 - m20*m12) + m02*(m10*m21 - m20*m11) ) * invDet;
+
+				return result;
 			}
 		}
 
@@ -108,10 +136,10 @@ namespace SteelEngine
 		{
 			get
 			{
-				return m00*(m11*(m22*m33 - m23*m32) - m12*(m23*m31 - m21*m33) + m13*(m21*m32 - m22*m31)) -
-					   m01*(m12*(m23*m30 - m20*m33) - m13*(m20*m32 - m22*m30) + m10*(m22*m33 - m23*m32)) +
-					   m02*(m13*(m20*m31 - m21*m30) - m10*(m21*m33 - m23*m31) + m11*(m23*m30 - m20*m33)) -
-					   m03*(m10*(m21*m32 - m22*m31) - m11*(m22*m30 - m20*m32) + m12*(m20*m31 - m21*m30));
+				return	(m00 * (m11*(m22*m33 - m23*m32) - m12*(m21*m33 - m23*m31) + m13*(m21*m32 - m22*m31) ))
+					- (m01 * (m10*(m22*m33 - m23*m32) - m12*(m20*m33 - m23*m30) + m13*(m20*m32 - m22*m30) ))
+					+ (m02 * (m10*(m21*m33 - m23*m31) - m11*(m20*m33 - m23*m30) + m13*(m20*m31 - m21*m30) ))
+					- (m03 * (m10*(m21*m32 - m22*m31) - m11*(m20*m32 - m22*m30) + m12*(m20*m31 - m21*m30) ));
 			}	
 		}
 
@@ -177,9 +205,10 @@ namespace SteelEngine
 			let x = y / aspect;
 			let zdist = (znear - zfar);
 			let zfar_per_zdist = zfar / zdist;
-			return .(x, 0, 0, 0, 0, y, 0, 0, 0, 0,
-					zfar_per_zdist * handedness, -1 * handedness, 0, 0,
-					2.0f * znear * zfar_per_zdist, 0);
+			return .(x, 0, 0, 0,
+					0, y, 0, 0,
+					0, 0, zfar_per_zdist * handedness, -1 * handedness,
+					0, 0, 2.0f * znear * zfar_per_zdist, 0);
 		}
 
 		public static Self Ortho(T left, T right, T bottom, T top, T znear, T zfar, T handedness = 1)
@@ -250,44 +279,118 @@ namespace SteelEngine
 
 		public static Self RotationX(T angle)
 		{
-			Self m = .Identity;
-
-			T cosT = (T)Math.Cos(angle);
-			T sinT = (T)Math.Sin(angle);
-			m.columns[1].y = cosT;
-			m.columns[1].z = -sinT;
-			m.columns[2].y = sinT;
-			m.columns[2].z = -cosT;
-
-			return m;
+			return .(Matrix33<T>.RotationX(angle));
 		}
 
 		public static Self RotationY(T angle)
 		{
-			Self m = .Identity;
-
-			T cosT = (T)Math.Cos(angle);
-			T sinT = (T)Math.Sin(angle);
-			m.columns[0].x = cosT;
-			m.columns[0].z = sinT;
-			m.columns[2].x = -sinT;
-			m.columns[2].z = cosT;
-
-			return m;
+			return .(Matrix33<T>.RotationY(angle));
 		}
 
 		public static Self RotationZ(T angle)
 		{
-			Self m = .Identity;
+			return .(Matrix33<T>.RotationZ(angle));
+		}
 
-			T cosT = (T)Math.Cos(angle);
-			T sinT = (T)Math.Sin(angle);
-			m.columns[0].x = cosT;
-			m.columns[0].y = -sinT;
-			m.columns[1].x = sinT;
-			m.columns[1].y = cosT;
+		public static Self operator+(Self lv, Self rv)
+		{
+			Self tmp = lv;
+			tmp.columns[0] += rv.columns[0];
+			tmp.columns[1] += rv.columns[1];
+			tmp.columns[2] += rv.columns[2];
+			tmp.columns[3] += rv.columns[3];
+			return tmp;
+		}
 
-			return m;
+		[Commutable]
+		public static Self operator+(Self lv, T rv)
+		{
+			Self tmp = lv;
+			tmp.columns[0] += rv;
+			tmp.columns[1] += rv;
+			tmp.columns[2] += rv;
+			tmp.columns[3] += rv;
+			return tmp;
+		}
+
+		public static Self operator-(Self lv, Self rv)
+		{
+			Self tmp = lv;
+			tmp.columns[0] -= rv.columns[0];
+			tmp.columns[1] -= rv.columns[1];
+			tmp.columns[2] -= rv.columns[2];
+			tmp.columns[3] -= rv.columns[3];
+			return tmp;
+		}
+
+		public static Self operator-(Self lv, T rv)
+		{
+			Self tmp = lv;
+			tmp.columns[0] -= rv;
+			tmp.columns[1] -= rv;
+			tmp.columns[2] -= rv;
+			tmp.columns[3] -= rv;
+			return tmp;
+		}
+
+		public static Self operator*(Self lv, Self rv)
+		{
+			Self tmp = ?;
+			{
+				Vector4<T> row = .(lv[0], lv[4], lv[8], lv[12]);
+				tmp[0] = Vector4<T>.DotProduct(rv.Column(0), row);
+				tmp[4] = Vector4<T>.DotProduct(rv.Column(1), row);
+				tmp[8] = Vector4<T>.DotProduct(rv.Column(2), row);
+				tmp[12] = Vector4<T>.DotProduct(rv.Column(3), row);
+			}
+			{
+				Vector4<T> row = .(lv[1], lv[5], lv[9], lv[13]);
+				tmp[1] = Vector4<T>.DotProduct(rv.Column(0), row);
+				tmp[5] = Vector4<T>.DotProduct(rv.Column(1), row);
+				tmp[9] = Vector4<T>.DotProduct(rv.Column(2), row);
+				tmp[13] = Vector4<T>.DotProduct(rv.Column(3), row);
+			}
+			{
+				Vector4<T> row = .(lv[2], lv[6], lv[10], lv[14]);
+				tmp[2] = Vector4<T>.DotProduct(rv.Column(0), row);
+				tmp[6] = Vector4<T>.DotProduct(rv.Column(1), row);
+				tmp[10] = Vector4<T>.DotProduct(rv.Column(2), row);
+				tmp[14] = Vector4<T>.DotProduct(rv.Column(3), row);
+			}
+			{
+				Vector4<T> row = .(lv[3], lv[7], lv[11], lv[15]);
+				tmp[3] = Vector4<T>.DotProduct(rv.Column(0), row);
+				tmp[7] = Vector4<T>.DotProduct(rv.Column(1), row);
+				tmp[11] = Vector4<T>.DotProduct(rv.Column(2), row);
+				tmp[15] = Vector4<T>.DotProduct(rv.Column(3), row);
+			}
+			return tmp;
+		}
+
+		[Commutable]
+		public static Self operator*(Self lv, T rv)
+		{
+			Self tmp = lv;
+			tmp.columns[0] *= rv;
+			tmp.columns[1] *= rv;
+			tmp.columns[2] *= rv;
+			tmp.columns[3] *= rv;
+			return tmp;
+		}
+
+		public static Self operator/(Self lv, T rv)
+		{
+			return lv * (1 / rv);
+		}
+
+		[Commutable]
+		public static Vector3<T> operator*(Vector3<T> lv, Matrix44<T> rv)
+		{
+			Vector3<T> result = ?;
+			result.x = lv.x * rv[0] + lv.y * rv[4] + lv.z * rv[8] + rv[12];
+			result.y = lv.x * rv[1] + lv.y * rv[5] + lv.z * rv[9] + rv[13];
+			result.z = lv.x * rv[2] + lv.y * rv[6] + lv.z * rv[10] + rv[14];
+			return result;
 		}
 	}
 }

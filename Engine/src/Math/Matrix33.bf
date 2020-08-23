@@ -116,6 +116,27 @@ namespace SteelEngine
 			}
 		}
 
+		public static Self RotationX(T angle)
+		{
+			T cosT = (T)Math.Cos(angle);
+			T sinT = (T)Math.Sin(angle);
+			return .(1, 0, 0, 0, cosT, sinT, 0, -sinT, cosT);
+		}
+
+		public static Self RotationY(T angle)
+		{
+			T cosT = (T)Math.Cos(angle);
+			T sinT = (T)Math.Sin(angle);
+			return .(cosT, 0, -sinT, 0, 1, 0, sinT, 0, cosT);
+		}
+
+		public static Self RotationZ(T angle)
+		{
+			T cosT = (T)Math.Cos(angle);
+			T sinT = (T)Math.Sin(angle);
+			return .(cosT, sinT, 0, -sinT, cosT, 0, 0, 0, 1);
+		}
+
 		public static Self operator+(Self lv, Self rv)
 		{
 			Self tmp = lv;
@@ -144,7 +165,6 @@ namespace SteelEngine
 			return tmp;
 		}
 
-		[Commutable]
 		public static Self operator-(Self lv, T rv)
 		{
 			Self tmp = lv;

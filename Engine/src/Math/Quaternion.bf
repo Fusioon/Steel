@@ -31,15 +31,7 @@ namespace SteelEngine
 		where int : operator T <=> T
 		where double : operator implicit T
 	{
-		public static Self Identity => .(1, 0, 0, 0);
-
-		[Error("Not implemented")]
-		public static Self LookAt(Vector3<T> forward, Vector3<T> up)
-		{
-			// @TODO(fusion)
-			//Matrix33_t<T>.LookAt(forward, up);
-			return default;//FromMatrix(Matrix33_t<T>());
-		}
+		public static Self Identity => .(0, 0, 0, 1);
 
 		public void operator+=(Self rv) mut
 		{

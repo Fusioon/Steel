@@ -43,14 +43,14 @@ namespace SteelEngine
 		public T m02 { [Inline] get { return data[2]; } [Inline] set mut { data[2] = value; } }
 		public T m03 { [Inline] get { return data[3]; } [Inline] set mut { data[3] = value; } }
 
-		public T m10 { [Inline] get { return data[3]; } [Inline] set mut { data[4] = value; } }
-		public T m11 { [Inline] get { return data[4]; } [Inline] set mut { data[5] = value; } }
-		public T m12 { [Inline] get { return data[5]; } [Inline] set mut { data[6] = value; } }
+		public T m10 { [Inline] get { return data[4]; } [Inline] set mut { data[4] = value; } }
+		public T m11 { [Inline] get { return data[5]; } [Inline] set mut { data[5] = value; } }
+		public T m12 { [Inline] get { return data[6]; } [Inline] set mut { data[6] = value; } }
 		public T m13 { [Inline] get { return data[7]; } [Inline] set mut { data[7] = value; } }
 
-		public T m20 { [Inline] get { return data[6]; } [Inline] set mut { data[8] = value; } }
-		public T m21 { [Inline] get { return data[7]; } [Inline] set mut { data[9] = value; } }
-		public T m22 { [Inline] get { return data[8]; } [Inline] set mut { data[10] = value; } }
+		public T m20 { [Inline] get { return data[8]; } [Inline] set mut { data[8] = value; } }
+		public T m21 { [Inline] get { return data[9]; } [Inline] set mut { data[9] = value; } }
+		public T m22 { [Inline] get { return data[10]; } [Inline] set mut { data[10] = value; } }
 		public T m23 { [Inline] get { return data[11]; } [Inline] set mut { data[11] = value; } }
 
 		public T this[int i]
