@@ -8,8 +8,6 @@ namespace SteelEngine.Renderer.BGFX
 	{
 		RenderServer _renderServer;
 
-		Renderable _cube;
-
 		public Result<void> Init(RenderServer server)
 		{
 			_renderServer = server;

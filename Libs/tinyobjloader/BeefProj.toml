@@ -1,0 +1,7 @@
+FileVersion = 1
+
+[Project]
+Name = "tinyobjloader"
+TargetType = "BeefLib"
+StartupObject = "Program"
+DefaultNamespace = "tinyobj"

@@ -38,9 +38,9 @@ namespace SteelEngine
 		Dictionary<StringView, ConfigVarValue> _configVars = new Dictionary<StringView, ConfigVarValue>() ~ delete _;
 		Queue<String> _enqueuedCommands = new Queue<String>() ~ delete _;
 		CommandsHistory _history ~ delete _;
-		int32 _historySize = 50;
+		int32 _historySize = 100;
 
-		int _maxLines = 1000;
+		int _maxLines = -1;
 		List<LineEntry> _lines = new List<LineEntry>() ~ delete _;
 
 		public CommandsHistory History => _history;
@@ -51,10 +51,8 @@ namespace SteelEngine
 		
 		public LogLevel logLevel = .Info;
 
-		LogCallback _logCallback = new => OnLogCallback ~ delete _;
-
 		bool _opened = false;
-		public bool IsOpen = _opened;
+		public bool IsOpen => _opened;
 
 		public this()
 		{
@@ -63,8 +61,6 @@ namespace SteelEngine
 
 		public ~this()
 		{
-			Log.RemoveCallback(_logCallback);
-
 		 	for (let cvar in _cvars.Values)
 				delete cvar;
 
@@ -80,14 +76,14 @@ namespace SteelEngine
 
 		public void Initialize(Span<String> configFiles)
 		{
-			Log.AddCallback(_logCallback);
+			Log.AddCallback(new (level, str) =>
+			{
+				PrintLine(level, str);
+			});
 
-			String tempPath = scope .();
 			for (var file in configFiles)
 			{
-				tempPath.Set(file);
-				Assets.GlobalizePath(tempPath);
-				if (LoadConfigFile(tempPath) case .Err(let err))
+				if (LoadConfigFile(file) case .Err(let err))
 				{
 					Log.Error("Couldn't open configuration file {0} ({1})", file, err);
 				}
@@ -96,6 +92,7 @@ namespace SteelEngine
 			RegisterVariable("console.historysize", "Size of commands history.", ref _historySize, .Config, new (cvar) => { _historySize = Math.Max(1, _historySize); History.Resize(_historySize); } );
 			_history = new CommandsHistory(_historySize);
 
+			RegisterVariable("console.maxlines", "Maximum lines console output can store (-1 for unlimited)", ref _maxLines, .Config, new (cvar) => ResizeOutput() );
 			RegisterVariable("console.loglevel", "Minimal level message need to be to be logged into console", ref logLevel, .Config);
 			RegisterVariable("sv.cheats", "Enable execution of commands with Cheat flag.", ref _cvarCheatsEnabled);
 			RegisterVariable("wait.frames", "Wait number of frames before continuing execution of commands.", ref _cvarWaitFrames);
@@ -141,14 +138,6 @@ namespace SteelEngine
 			});
 		}
 
-		void OnLogCallback(LogLevel logLevel, StringView message)
-		{
-			if (logLevel < logLevel)
-				return;
-
-			PrintLine(logLevel, message);
-		}
-
 		public void Open()
 		{
 			_opened = true;
@@ -172,11 +161,21 @@ namespace SteelEngine
 			_lines.Clear();
 		}
 
-		
+		protected void ResizeOutput()
+		{
+			if (_maxLines < 0)
+				return;
+
+			for (int i = _maxLines; i < _lines.Count; i++)
+			{
+				_lines[i].Dispose();
+			}
+		}
+
 		protected void PrintLine(LogLevel logLevel, StringView message)
 		{
 			LineEntry entry = LineEntry() { level = logLevel };
-			if (_lines.Count < _maxLines)
+			if (_maxLines < 0 || _lines.Count < _maxLines)
 			{
 				entry.message = new String(message);
 			}
@@ -480,6 +479,18 @@ namespace SteelEngine
 			return .Ok;
 		}
 
-		public IEnumerator<CVar> GetCVars() => _cvars.Values;
+		public void GetCVars(StringView prefix, List<CVar> cvars, int maxCount = -1)
+		{
+			for (let cvar in _cvars)
+			{
+				if (prefix.IsEmpty)
+					cvars.Add(cvar.value);
+				else if (cvar.key.StartsWith(prefix))
+					cvars.Add(cvar.value);
+
+				if (maxCount > 0 && cvars.Count >= maxCount)
+					break;
+			}
+		}
 	}
 }

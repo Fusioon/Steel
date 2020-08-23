@@ -1,30 +1,17 @@
 using System;
 using System.IO;
+using SteelEngine.Renderer;
 
 namespace SteelEngine.AssetTypes
 {
-	enum ImageFormat
-	{
-		L8, //luminance
-		LA8, //luminance-alpha
-		R8,
-		RG8,
-		RGB8,
-		RGBA8,
-		RGBA4444,
-		RGB565,
-		RF, //float
-		RGF,
-		RGBF,
-		RGBAF,
-	}
 
 	class Image
 	{
 		uint8[] _data ~ delete _;
+		public Span<uint8> Data => .(_data);
 		public uint32 Width { get; protected set; }
 		public uint32 Height { get; protected set; }
-		public ImageFormat Format { get; protected set; }
+		public TextureFormat Format { get; protected set; }
 		public int MemorySize => _data?.Count ?? 0;
 		public bool IsEmpty => (_data == null || _data.Count == 0);
 
@@ -33,12 +20,12 @@ namespace SteelEngine.AssetTypes
 
 		}
 
-		public this(uint32 width, uint32 height, ImageFormat format, int8[] data)
+		public this(uint32 width, uint32 height, TextureFormat format, int8[] data)
 		{
 
 		}
 
-		public Result<void, FileError> LoadBPM(StringView path)
+		public Result<void, FileError> LoadBMP(StringView path)
 		{
 			const uint BITMAP_SIGNATURE = 0x4d42;
 			const uint BITMAP_FILE_HEADER_SIZE = 14;
@@ -97,7 +84,7 @@ namespace SteelEngine.AssetTypes
 				}
 			}
 
-			ImageFormat format;
+			TextureFormat format;
 			switch (info.bits) {
 				case 32:
 					format = .RGBA8;
@@ -146,7 +133,7 @@ namespace SteelEngine.AssetTypes
 			void* fileData = resul.CStr();
 			uint fsize = (.)resul.Length;
 			int32 success = libpng.png_image_begin_read_from_memory(&pngImg, fileData, fsize);
-			ImageFormat dstFormat = ?;
+			TextureFormat dstFormat = ?;
 			switch(pngImg.format)
 			{
 			case .Gray: dstFormat = .L8;
@@ -175,6 +162,16 @@ namespace SteelEngine.AssetTypes
 			Format = dstFormat;
 			
 			return .Ok;
+		}
+
+		public void ApplyToTexture2D(Texture2D texture)
+		{
+			if (!IsEmpty)
+			{
+				texture.SetData(Width, Height, ref _data, Format);
+				texture.Apply();
+			}
+				
 		}
 	}
 }

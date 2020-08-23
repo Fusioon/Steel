@@ -3,11 +3,14 @@ using SteelEngine.Math;
 
 namespace SteelEngine.Renderer
 {
-	[CRepr, Ordered]
+	[CRepr, Ordered, Reflect]
 	struct PositionColorVertex : IHashable
 	{
+		[VertexUsage(.Position)]
 		public Vector3 pos;
+		[VertexUsage(.TexCoord0)]
 		public Vector2 textCoord;
+		[VertexUsage(.Color0)]
 		public int32 abgr;
 
 		public this(Vector3 p, int32 color)
@@ -38,12 +41,16 @@ namespace SteelEngine.Renderer
 
 	typealias Vertex = PositionColorVertex;
 
-	[CRepr, Ordered]
+	[CRepr, Ordered, Reflect]
 	struct PositionColorNormalVertex : IHashable
 	{
+		[VertexUsage(.Position)]
 		public Vector3 pos;
+		[VertexUsage(.Normal)]
 		public Vector3 normal;
+		[VertexUsage(.TexCoord0)]
 		public Vector2 textCoord;
+		[VertexUsage(.Color0)]
 		public int32 abgr;
 
 		public this(Vector3 p, int32 color)
