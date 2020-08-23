@@ -82,9 +82,12 @@ namespace SteelEngine
 		{
 			Log.AddCallback(_logCallback);
 
+			String tempPath = scope .();
 			for (var file in configFiles)
 			{
-				if (LoadConfigFile(file) case .Err(let err))
+				tempPath.Set(file);
+				Assets.GlobalizePath(tempPath);
+				if (LoadConfigFile(tempPath) case .Err(let err))
 				{
 					Log.Error("Couldn't open configuration file {0} ({1})", file, err);
 				}

@@ -1,5 +1,6 @@
 using System;
 using SteelEngine;
+using SteelEngine.Input;
 using SteelEngine.ECS.Components;
 using SteelEngine.ECS;
 using SteelEngine.ECS.Systems;
@@ -9,14 +10,44 @@ namespace BasicSteelGame
 {
 	class BasicGameApp : Application
 	{
-		public override void OnInit()
+		const String QUIT_ACTION_NAME = "quit_app";
+
+		protected override void OnStart()
 		{
-			base.OnInit();
+			
 		}
 
-		public override void OnCleanup()
+		protected override void OnInit()
 		{
-			base.OnCleanup();
+			let entity = CreateEntity();
+
+			entity.AddComponent(new MyBehavior());
+			// Even adding a system after entity creation should register the components it requires.
+			CreateSystem<MySystem>();
+			// Only registering one of the required Components for the RenderSpriteSystem should cause the SpriteComponent to not register with the system.
+			entity.AddComponent(new SpriteComponent());
+
+			Input.SetInputMapping(QUIT_ACTION_NAME, .Escape);
+		}
+
+		
+
+		protected override void OnCleanup()
+		{
+			
+		}
+
+		protected override void OnUpdate()
+		{
+			if (Input.IsJustPressed(QUIT_ACTION_NAME))
+			{
+				base.[Friend]_isRunning = false;
+			}
+		}
+
+		protected override void OnDraw()
+		{
+
 		}
 	}
 
@@ -84,37 +115,29 @@ namespace BasicSteelGame
 			}
 			IsUpdated = true;
 
-			Console.WriteLine("BehaviorSystem update hook");
+			//Console.WriteLine("BehaviorSystem update hook");
 		}
 
 		protected void MyDraw()
 		{
-			Console.WriteLine("MySystem draw hook");
+			//Console.WriteLine("MySystem draw hook");
 		}
 
 		protected void MyUpdate(float delta)
 		{
-			Console.WriteLine("MySystem update hook");
+			//Console.WriteLine("MySystem update hook");
 		}
 	}
 
 	class Program
 	{
-		public static int Main(String[] args)
+		[CLink]
+		static extern Windows.IntBool IsDebuggerPresent();
+
+		public static void Main(String[] args)
 		{
-			var app = scope BasicGameApp();
-
-			let entity = app.CreateEntity();
-
-			entity.AddComponent(new MyBehavior());
-			// Even adding a system after entity creation should register the components it requires.
-			app.CreateSystem<MySystem>();
-			// Only registering one of the required Components for the RenderSpriteSystem should cause the SpriteComponent to not register with the system.
-			entity.AddComponent(new SpriteComponent());
-
-			app.Run();
-
-			return 0;
+			//while(!IsDebuggerPresent()) {}
+			scope BasicGameApp().Run();
 		}
 	}
 }

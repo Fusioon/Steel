@@ -1,0 +1,22 @@
+FileVersion = 1
+
+[Project]
+Name = "libpng"
+TargetType = "BeefLib"
+StartupObject = "Program"
+
+[Configs.Debug.Win64]
+LibPaths = ["$(ProjectDir)/dist/x64/libpng.lib"]
+PostBuildCmds = ["CopyToDependents(\"$(ProjectDir)/dist/x64/*.dll\")"]
+
+[Configs.Release.Win64]
+LibPaths = ["$(ProjectDir)/dist/x64/libpng.lib"]
+PostBuildCmds = ["CopyToDependents(\"$(ProjectDir)/dist/x64/*.dll\")"]
+
+[Configs.Paranoid.Win64]
+LibPaths = ["$(ProjectDir)/dist/x64/libpng.lib"]
+PostBuildCmds = ["CopyToDependents(\"$(ProjectDir)/dist/x64/*.dll\")"]
+
+[Configs.Test.Win64]
+LibPaths = ["$(ProjectDir)/dist/x64/libpng.lib"]
+PostBuildCmds = ["CopyToDependents(\"$(ProjectDir)/dist/x64/*.dll\")"]

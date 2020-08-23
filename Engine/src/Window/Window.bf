@@ -16,15 +16,14 @@ namespace SteelEngine.Window
 		public int Height;
 		public bool Undecorated;
 		public bool Resizable;
-		public bool VSync;
 		public bool Maximized;
 		public bool Invisible;
 
 		public this(int width, int height, StringView title = "Steel Window",
-			bool undecorated = false, bool resizable = false, bool vsync = false, bool max = false, bool inv = false)
+			bool undecorated = false, bool resizable = false,  bool max = false, bool inv = false)
 		{
 			this.Title = title; this.Width = width; this.Height = height;
-			this.Undecorated = undecorated; this.Resizable = resizable; this.VSync = vsync;
+			this.Undecorated = undecorated; this.Resizable = resizable;
 			this.Maximized = max; this.Invisible = inv;
 		}
 	}
@@ -39,13 +38,12 @@ namespace SteelEngine.Window
 		private bool _vSync;
 		private EventCallback _eventCallback;
 
-		public GlfwWindow* GetHandle { get { return _handle; } }
-		public Vector2<int> GetSize { get { return _size; } }
+		public GlfwWindow* Handle { get { return _handle; } }
+		public Vector2<int> Size { get { return _size; } }
 
 		public this(WindowConfig cfg, EventCallback callback)
 		{
 			this._size = .(cfg.Width, cfg.Height);
-			this._vSync = cfg.VSync;
 			this._eventCallback = callback;
 			
 			if (!Glfw.Init())
@@ -53,11 +51,6 @@ namespace SteelEngine.Window
 				// If GLFW can't initialize, just crash the program
 				Log.Fatal("Could not initialize GLFW");
 			}
-
-			Glfw.WindowHint(GlfwWindow.Hint.ContextVersionMajor, 3);
-			Glfw.WindowHint(GlfwWindow.Hint.ContextVersionMinor, 3);
-			Glfw.WindowHint(GlfwWindow.Hint.OpenGlProfile, .CoreProfile);
-			Glfw.WindowHint(GlfwWindow.Hint.OpenGlForwardCompat, Glfw.TRUE);
 
 			// TODO(Sheep): few other flags to set
 			Glfw.WindowHint(GlfwWindow.Hint.Decorated, !cfg.Undecorated);
@@ -160,18 +153,6 @@ namespace SteelEngine.Window
 			Glfw.SetCursorPosCallback(this._handle, mouseMovedCallback);
 		}
 
-		public void Update()
-		{
-			switch(_vSync)
-			{
-			case true : Glfw.SwapInterval(1);
-			case false: Glfw.SwapInterval(0);
-			}
-
-			Glfw.PollEvents();
-			Glfw.SwapBuffers(_handle);
-		}
-
 		public void Destroy()
 		{
 			Glfw.DestroyWindow(_handle);
@@ -183,5 +164,10 @@ namespace SteelEngine.Window
 		{
 			Glfw.SetWindowTitle(_handle, title);
 		}
+
+		public static void ProcessEvents()
+		{
+			Glfw.PollEvents();
+		}	
 	}	
 }

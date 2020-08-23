@@ -7,10 +7,11 @@ using SteelEngine.ECS;
 using SteelEngine.ECS.Systems;
 using SteelEngine.ECS.Components;
 using SteelEngine.Console;
+using SteelEngine.Renderer.BGFX;
 
 namespace SteelEngine
 {
-	public abstract class Application : IDisposable
+	public abstract class Application
 	{
 		private bool _isRunning = false;
 
@@ -23,20 +24,16 @@ namespace SteelEngine
 		private List<EntityId> _entitiesToRemoveFromStore ~ delete _;
 		private GLFWInputManager _inputManager = new GLFWInputManager() ~ delete _;
 		private GameConsole _gameConsole = new GameConsole() ~ delete _;
+		private RenderServer _renderServer = new RenderServer() ~ delete _;
 
 		public this()
 		{
-			OnInit();
+			
 		}
 
 		public ~this()
 		{
-			Dispose();
-		}
-
-		public void Dispose()
-		{
-			OnCleanup();
+			
 		}
 
 		/// <summary>
@@ -72,37 +69,34 @@ namespace SteelEngine
 
 		public void Run()
 		{
-			_isRunning = true;
+			Start();
 
-			var windowConfig = WindowConfig(1080, 720, "SteelEngine");
+			var windowConfig = WindowConfig(1280, 720, "SteelEngine", false, true);
 			_window = new Window(windowConfig, _eventCallback);
 
-			Time.[Friend]Initialize();
-			_inputManager.Initialize();
-			for (let system in _systems)
-			{
-				switch (system.[Friend]Initialize())
-				{
-					case .Ok: continue;
-					case .Err(.AlreadyInitialized): Log.Warning("Tried to initialize a system that was already initialized.");
-					case .Err(.Unknown):
-					default: Log.Fatal("Unknown error initializing a system");
-				}
-			}
+			Init();
 
+			_isRunning = true;
 			while (_isRunning)
 			{
+				Window.ProcessEvents();
 				Update();
 				Draw();
 			}
+
+			Cleanup(); 
 		}
 
+		// Called before window is created
+		protected abstract void OnStart();
+
 		// Gets called right before the window is created
-		public virtual void OnInit()
+		private void Start()
 		{
 			Log.AddHandle(Console.Out);
-
-			_gameConsole.Initialize(scope String[]("config.cfg"));
+			// @TODO(fusion) add way to set this through command line arguments or cvar
+			Assets.[Friend]Initialize("D:\\SteelEngine\\content");
+			_gameConsole.Initialize(scope String[]("config.cfg", "res://config.cfg"));
 
 			_components = new Dictionary<ComponentId, BaseComponent>();
 			_componentsToDelete = new List<BaseComponent>();
@@ -119,11 +113,40 @@ namespace SteelEngine
 			CreateSystem<RenderTextSystem>();
 			CreateSystem<SoundSystem>();
 			CreateSystem<BehaviorSystem>();
+
+			OnStart();
+		}
+
+		// Called after window creation
+		protected abstract void OnInit();
+
+		private void Init()
+		{
+			_renderServer.Init(_window);
+
+			Time.[Friend]Initialize();
+			_inputManager.Initialize();
+			for (let system in _systems)
+			{
+				switch (system.[Friend]Initialize())
+				{
+					case .Ok: continue;
+					case .Err(.AlreadyInitialized): Log.Warning("Tried to initialize a system that was already initialized.");
+					case .Err(.Unknown):
+					default: Log.Fatal("Unknown error initializing a system");
+				}
+			}
+
+			OnInit();
 		}
 
 		// Gets called when the window is destroyed
-		public virtual void OnCleanup()
+		protected abstract void OnCleanup();
+
+		private void Cleanup()
 		{
+			OnCleanup();
+
 			_window.Destroy();
 
 			// Order of deletion is important. Deleting from lowest to highest abstraction is safe.
@@ -151,6 +174,7 @@ namespace SteelEngine
 
 			var dispatcher = scope EventDispatcher(event);
 			dispatcher.Dispatch<WindowCloseEvent>(scope => OnWindowClose);
+			dispatcher.Dispatch<WindowResizeEvent>(scope => OnWindowResize);
 		}
 
 		private bool OnWindowClose(WindowCloseEvent event)
@@ -159,7 +183,13 @@ namespace SteelEngine
 			return true;
 		}
 
-		protected virtual void OnUpdate() { }
+		private bool OnWindowResize(WindowResizeEvent event)
+		{
+			_renderServer.Resize((uint32)event.Width, (uint32)event.Height);
+			return true;
+		}
+
+		protected abstract void OnUpdate();
 
 		private void Update()
 		{
@@ -180,14 +210,18 @@ namespace SteelEngine
 			OnUpdate();
 		}
 
+		protected virtual void OnDraw() {}
+
 		private void Draw()
 		{
+			OnDraw();
+
 			for (let system in _systems)
 			{
 				system.[Friend]Draw();
 			}
 
-			_window.Update();
+			_renderServer.Draw();
 		}
 
 
