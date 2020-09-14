@@ -690,10 +690,10 @@ namespace SteelEngine.Renderer.BGFX
 
 			Bgfx.SetViewTransform(0, &view, &proj);
 
-			EXAMPLE_DrawCubes();
+			//EXAMPLE_DrawCubes();
 			//EXAMPLE_DrawMetaballs();
 			//EXAMPLE_RenderScreenSpaceQuad(1, .Zero, .(_width, _height));
-			EXAMPLE_DrawMesh();
+			//EXAMPLE_DrawMesh();
 
 			//EXAMPLE_Instancing();
 			EXAMPLE_Bump();
@@ -832,17 +832,17 @@ namespace SteelEngine.Renderer.BGFX
 			if(mat == null) // @TODO - Use pink_squares shader in this case
 				return;
 
-			if(mat.ResourceId.IsNull)
-			{
-				InitializeShader(mat.shader);
-				InitializeTexture2D(mat.colorTex);
-				InitializeTexture2D(mat.normTex); // Have empty texture prepared so this can be empty
-			}
+			if(mat.shader.ResourceId.IsNull) InitializeShader(mat.shader);
+			if(mat.colorTex.ResourceId.IsNull) InitializeTexture2D(mat.colorTex);
+			if(mat.normTex.ResourceId.IsNull) InitializeTexture2D(mat.normTex);
 
-			Bgfx.SetTexture(0, _uSTexColor, *_textures[mat.colorTex], .None);
-			Bgfx.SetTexture(1, _uSTexNormal, *_textures[mat.normTex], .None);
+			if(_textures.Owns(mat.colorTex.ResourceId))
+				Bgfx.SetTexture(0, _uSTexColor, *_textures[mat.colorTex], .None);
+			if(_textures.Owns(mat.normTex.ResourceId))
+				Bgfx.SetTexture(1, _uSTexNormal, *_textures[mat.normTex], .None);
+
 			Matrix44 t = transform;
-			SetTransform(&t, 0);
+			SetTransform(&t, 1);
 			DrawMesh(m, mat);
 		}
 	}

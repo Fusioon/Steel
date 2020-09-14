@@ -59,8 +59,8 @@ namespace BasicSteelGame
 				let entity = Application.Instance.CreateEntity();
 				entity.AddComponent<TransformComponent>().Position = .(gRand.Next(-20, 20), gRand.Next(-20, 20), gRand.Next(-20, 20));
 				let draw = entity.AddComponent<Drawable3dComponent>();
-				draw.Mesh = Resources.Load<Mesh>("res://models/cube.obj");
-				draw.Material = Resources.Load<Material>("res://test.mat");
+				draw.Mesh = Resources.Load<Mesh>("res://models/cube.obj")..Dispose();
+				draw.Material = Resources.Load<Material>("res://test.mat")..Dispose();
 			}
 		}
 
