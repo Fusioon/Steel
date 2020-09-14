@@ -5,9 +5,21 @@ using Bgfx;
 
 namespace SteelEngine.Renderer.BGFX
 {
+	struct VertexLayoutData : IDisposable
+	{
+		public Bgfx.VertexLayout layout;
+
+		public void Dispose()
+		{
+
+		}
+	}
+
 	public static class VertexDescriptors
 	{
 		static Dictionary<Type, Bgfx.VertexLayout> _vertexLayouts = new .() ~ delete _;
+		static RIDOwner<VertexLayoutData> _layouts;
+
 
 		public static Bgfx.VertexLayout* Get(Type vertexType) => &_vertexLayouts[vertexType];
 

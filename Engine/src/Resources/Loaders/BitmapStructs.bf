@@ -1,8 +1,8 @@
 using System;
 
-namespace SteelEngine.AssetTypes
+namespace SteelEngine.Loaders
 {
-	[Ordered]
+	[CRepr, Ordered]
 	struct BITMAPFILEHEADER
 	{
 		public uint16 id;
@@ -11,7 +11,7 @@ namespace SteelEngine.AssetTypes
 		public uint32 offset;
 	}
 
-	[CRepr]
+	[CRepr, Ordered]
 	struct BITMAPINFOHEADER
 	{
 		public uint32 header_size;
@@ -28,7 +28,7 @@ namespace SteelEngine.AssetTypes
 
 	}
 
-	[CRepr]
+	[CRepr, Ordered]
 	struct PIXELDATA
 	{
 		public uint8 blue;

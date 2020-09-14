@@ -27,7 +27,6 @@ namespace SteelEngine.Renderer
 		public Matrix44 Projection => _projection;
 		public Matrix44 View => _view;
 
-
 		public CameraClearFlags clearFlags = .DepthAndColor;
 		public Color4u clearColor = .(0,0,0, 1);
 
@@ -43,9 +42,30 @@ namespace SteelEngine.Renderer
 
 		public void SetPositionRotation(Vector3 position, Quaternion rotation)
 		{
-			// If rotation y > 180 weird shit happens
 			_view = Matrix44.Transform(position, rotation, .One).Inverse;
 		}
+
+		public Vector3 Position
+		{
+			[Inline] get => _view.columns[3].xyz;
+			[Inline] set mut => _view.columns[3] = .(value, 1);
+		}
+
+		public Quaternion Rotation
+		{
+			[Inline] get => .FromMatrix(_view.RotationMatrix);
+			[Inline] set mut
+			{
+				let rot = value.ToMatrix();
+				_view = .(
+					.(rot.columns[0], _view.columns[0].w),
+					.(rot.columns[1], _view.columns[1].w),
+					.(rot.columns[2], _view.columns[2].w),
+					_view.columns[3]
+				);
+			}
+		}
+		
 
 		public float FieldOfView
 		{

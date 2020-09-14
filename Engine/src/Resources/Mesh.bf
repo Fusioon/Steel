@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using SteelEngine.Math;
 
-namespace SteelEngine.AssetTypes
+namespace SteelEngine
 {
 	struct VertexData : IHashable
 	{
@@ -21,16 +21,19 @@ namespace SteelEngine.AssetTypes
 		}
 	}
 
-	class Mesh
+	class Mesh : Resource
 	{
+		/*RID _rid;
+		public override RID ResourceId => _rid;*/
+
 		public List<VertexData> vertexData ~ delete _;
 		public List<uint16> indexData ~ delete _;
 		public bool IsValid { get; private set; }
 
-		public Result<void> Load(StringView path, bool uniqueVerticesOnly = true)
+		Result<void> Load(StringView path, bool uniqueVerticesOnly = true)
 		{
 			String tmpPath = scope .(path);
-			Assets.GlobalizePath(tmpPath);
+			Resources.GlobalizePath(tmpPath);
 
 			tinyobj.ObjReader reader = scope .();
 
@@ -95,6 +98,26 @@ namespace SteelEngine.AssetTypes
 			indexData = indices;
 			IsValid = true;
 			return .Ok;
+		}
+
+		public this() : base()
+		{
+			
+		}
+
+		public this(List<VertexData> vertices, List<uint16> indices, bool copyData = false)
+		{
+			if (copyData)
+			{
+				vertexData = new List<VertexData>(vertices.GetEnumerator());
+				indexData = new List<uint16>(indices.GetEnumerator());
+			}
+			else
+			{
+				vertexData = vertices;
+				indexData = indices;
+			}
+			IsValid = true;
 		}
 	}
 }

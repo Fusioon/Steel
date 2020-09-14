@@ -330,6 +330,12 @@ namespace SteelEngine
 			let factor = value / length;
 			return .(v.x * factor, v.y * factor, v.z * factor, v.w * factor);
 		}
+
+		[Inline]
+		public static bool IsEqualsApprox(Self v1, Self v2)
+		{
+			return Helpers.IsEqualsApprox(v1.x, v2.x) && Helpers.IsEqualsApprox(v1.y, v2.y) && Helpers.IsEqualsApprox(v1.z, v2.z) && Helpers.IsEqualsApprox(v1.w, v2.w);
+		}
 	}
 
 	public extension Vector4<T> where T : operator T + T, operator T - T, operator T * T, operator -T

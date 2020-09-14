@@ -262,7 +262,39 @@ namespace SteelEngine.Input
 			return false;
 		}
 
+		public static void SetCursorState(CursorState state)
+		{
+			glfw_beef.GlfwInput.CursorInputMode mode = .Normal;
+			bool rawInput = false;
+			switch (state)
+			{
+				case .Visible:
+					mode = .Normal;
+				case .Hidden:
+					mode = .Hidded;
+				case .Confined:
+					mode = .Disabled;
+					rawInput = true;
+				case .Captured:
+					mode = .Disabled;
+			}
 
+			if (glfw_beef.Glfw.RawMouseMotionSupported())
+			{
+				if (rawInput)
+				{
+					glfw_beef.Glfw.SetInputMode(Application.Instance.MainWindow.Handle, .RawMouseMotion, glfw_beef.Glfw.TRUE);
+				}
+				else
+				{
+					glfw_beef.Glfw.SetInputMode(Application.Instance.MainWindow.Handle, .RawMouseMotion, glfw_beef.Glfw.FALSE);
+				}	
+			}
+			
+
+			glfw_beef.Glfw.SetInputMode(Application.Instance.MainWindow.Handle, .Cursor, mode);
+			
+		}
 
 	}
 }

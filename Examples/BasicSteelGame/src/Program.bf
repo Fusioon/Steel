@@ -6,46 +6,65 @@ using SteelEngine.ECS;
 using SteelEngine.ECS.Systems;
 using System.Collections;
 
+public static
+{
+	[CLink]
+	public static extern Windows.IntBool IsDebuggerPresent();
+}
+
+
 namespace BasicSteelGame
 {
-	class BasicGameApp : Application
+	class GameImpl : IGame
 	{
 		const String QUIT_ACTION_NAME = "quit_app";
+		const String SPAWN_ENT_ACTION_NAME = "spawn_ent";
 
-		protected override void OnStart()
+		public Result<void> Setup()
 		{
-			
+			IsDebuggerPresent();
+
+			return .Ok;
 		}
 
-		protected override void OnInit()
+		public Result<void> Init()
 		{
-			let entity = CreateEntity();
+			return .Ok;
+		}
+
+		public void Start()
+		{
+			let entity = Application.Instance.CreateEntity();
 
 			entity.AddComponent(new MyBehavior());
 			// Even adding a system after entity creation should register the components it requires.
-			CreateSystem<MySystem>();
+			//Application.Instance.CreateSystem<MySystem>();
+
 			// Only registering one of the required Components for the RenderSpriteSystem should cause the SpriteComponent to not register with the system.
 			entity.AddComponent(new SpriteComponent());
 
 			Input.SetInputMapping(QUIT_ACTION_NAME, .Escape);
+			Input.SetInputMapping(SPAWN_ENT_ACTION_NAME, .Q);
+			Input.SetCursorState(.Confined);
 		}
 
-		
-
-		protected override void OnCleanup()
-		{
-			
-		}
-
-		protected override void OnUpdate()
+		public void Update()
 		{
 			if (Input.IsJustPressed(QUIT_ACTION_NAME))
 			{
-				base.[Friend]_isRunning = false;
+				Application.Instance.Quit();
+			}
+			if(Input.IsJustPressed(SPAWN_ENT_ACTION_NAME))
+			{
+				let entity = Application.Instance.CreateEntity();
+				entity.AddComponent<TransformComponent>().Position = .(gRand.Next(-20, 20), gRand.Next(-20, 20), gRand.Next(-20, 20));
+				let draw = entity.AddComponent<Drawable3dComponent>();
+				draw.Mesh = Resources.Load<Mesh>("res://models/cube.obj");
+				draw.Material = Resources.Load<Material>("res://test.mat");
 			}
 		}
 
-		protected override void OnDraw()
+		public void Shutdown()
 		{
 
 		}
@@ -56,7 +75,7 @@ namespace BasicSteelGame
 	class MySystem : BaseSystem
 	//class MySystem : BehaviorSystem
 	{
-		public this(Application app) : base(app) {}
+		public this() : base() {}
 
 		protected override void RegisterComponentTypes()
 		{
@@ -126,18 +145,6 @@ namespace BasicSteelGame
 		protected void MyUpdate(float delta)
 		{
 			//Console.WriteLine("MySystem update hook");
-		}
-	}
-
-	class Program
-	{
-		[CLink]
-		static extern Windows.IntBool IsDebuggerPresent();
-
-		public static void Main(String[] args)
-		{
-			//while(!IsDebuggerPresent()) {}
-			scope BasicGameApp().Run();
 		}
 	}
 }

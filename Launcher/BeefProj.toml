@@ -1,0 +1,6 @@
+FileVersion = 1
+Dependencies = {corlib = "*", BasicSteelGame = "*"}
+
+[Project]
+Name = "Launcher"
+StartupObject = "Launcher.Program"

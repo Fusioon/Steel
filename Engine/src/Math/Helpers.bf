@@ -11,26 +11,43 @@ namespace SteelEngine.Math
 			seed ^= hash;
 		}
 
+		[Inline]
+		public static bool IsEqualsApprox<T>(T v1, T v2)
+			where bool : operator T < T where T : operator -T
+			where T : operator explicit double, operator T * T, operator T - T
+		{
+			const double CMP_EPSILON = 0.00001;
+
+			// Check exact value for infinity cases
+			if (v1 == v2)
+				return true;
+
+			T tolerance = (Math.Abs(v1) * (T)CMP_EPSILON);
+			if (tolerance < (T)CMP_EPSILON)
+				tolerance = (T)CMP_EPSILON;
+
+			return Math.Abs(v1 - v2) < tolerance;
+		}
 	}
 
 	public static
 	{
 		public static mixin Deg2Rad(float deg)
 		{
-			deg / 180 * System.Math.PI_f
+			float(deg / 180 * System.Math.PI_f)
 		}
 		public static mixin Rad2Deg(float rad)
 		{
-			rad / System.Math.PI_d * 180
+			float(rad / System.Math.PI_f * 180)
 		}
 
 		public static mixin Deg2Rad(double deg)
 		{
-			deg / 180 * System.Math.PI_f
+			double(deg / 180 * System.Math.PI_d)
 		}
 		public static mixin Rad2Deg(double rad)
 		{
-			rad / System.Math.PI_d * 180
+			double(rad / System.Math.PI_d * 180)
 		}
 	}
 }

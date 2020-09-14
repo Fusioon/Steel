@@ -21,10 +21,9 @@ namespace SteelEngine.Renderer.BGFX
 		Exclusive
 	}
 
-
-	class RenderServer
+	public static class CubeMesh
 	{
-		public static var cubeVertices = Vertex[](
+		public static var vertices = Vertex[](
 			.(.(-1.0f,  1.0f,  1.0f), (int32)0xff000000 ),
 			.(.( 1.0f,  1.0f,  1.0f), (int32)0xff0000ff ),
 			.(.(-1.0f, -1.0f,  1.0f), (int32)0xff00ff00 ),
@@ -35,21 +34,7 @@ namespace SteelEngine.Renderer.BGFX
 			.(.( 1.0f, -1.0f, -1.0f), (int32)0xffffffff ),
 		);
 
-		/*public static var cubeIndices = uint16[](
-			0, 1, 2, // 0
-			1, 3, 2,
-			4, 6, 5, // 2
-			5, 6, 7,
-			0, 2, 4, // 4
-			4, 2, 6,
-			1, 5, 3, // 6
-			5, 7, 3,
-			0, 4, 1, // 8
-			4, 5, 1,
-			2, 3, 6, // 10
-			6, 3, 7);*/
-
-		public static var cubeIndices = uint16[](
+		public static var indices = uint16[](
 			2, 1, 0, // 0
 			2, 3, 1,
 			5, 6, 4, // 2
@@ -61,11 +46,38 @@ namespace SteelEngine.Renderer.BGFX
 			1, 4, 0, // 8
 			1, 5, 4,
 			6, 3, 2, // 10
-			7, 3, 6);
+			7, 3, 6,
+		);
+	}
+
+	struct Renderable : IDisposable
+	{
+		public Mesh mesh;
+		public Material material;
+
+		public void Dispose()
+		{
+			mesh.DisposeSafe();
+			material.DisposeSafe();
+		}	
+	}
+
+	class BgfxRenderServer : RenderServer
+	{
+		public static Bgfx.TextureFormat GetBGFXPixelFormat(this PixelFormat format)
+		{
+			switch (format)
+			{
+			case .RGBA8: return .RGBA8;
+			case .RGB8: return .RGB8;
+			default: break;
+			}
+			Log.Warning("GetBGFXPixelFormat returning Unknown for {} format!", format);
+			return .Unknown;
+		}
 
 		RendererType _rendererType = .OpenGL;
 		FullscreenMode _fullscreenMode;
-		int _clearColor = 0x770077FF;
 		bool _vsync = true;
 
 		Bgfx.DebugFlags _debugFlags = .None;
@@ -77,30 +89,41 @@ namespace SteelEngine.Renderer.BGFX
 		Grid[] _grid ~ delete _;
 		ProgramHandle _metaballsProgram;
 		ProgramHandle _raymarchProgram;
-		ProgramHandle _meshProgram;
 
 		UniformHandle _uMtx;
 		UniformHandle _uLightDirTime;
 		UniformHandle _uTime;
 
-		BgfxMesh _cube ~ _.Dispose();
-		BgfxMesh _mesh ~ _.Dispose();
+		UniformHandle _uSTexColor;
+		UniformHandle _uSTexNormal;
+		const int NUM_LIGHTS = 4;
+		UniformHandle _uLightPosRadius;
+		UniformHandle _uLightRGBInnerR;
+
+		Renderable _cube ~ _.Dispose();
+		Renderable _mesh ~ _.Dispose();
+		Renderable _instanced ~ _.Dispose();
+
+		Renderable _bump ~ _.Dispose();
+		ImageTexture _textureColor ~ _.Dispose();
+		ImageTexture _textureNormal ~ _.Dispose();
+
+		RIDOwner<BgfxMesh> _meshes = new RIDOwner<BgfxMesh>() ~ delete _;
+		RIDOwner<ProgramHandle> _shaders = new RIDOwner<ProgramHandle>() ~ delete _;
+		RIDOwner<TextureHandle> _textures = new RIDOwner<TextureHandle>() ~ delete _;
 
 		Camera _cam ~ delete _;
 
-		Texture2D _texture ~ _.Dispose();
+		Texture2D _texture ~ _.DisposeSafe();
 
-		void OnDebugChange(CVar cvar)
-		{
-			Bgfx.SetDebug(_debugFlags);
-		}
+		Vector3 eye;
+		Vector3 rotation;
 
 		public Result<void> Init(Window window)
 		{
 			GameConsole.Instance
 			..RegisterVariable("r.type", "Renderer type (Needs restart)", ref _rendererType, .Config)
-			..RegisterVariable("r.clearcolor", "Clear color", ref _clearColor, .Config)
-			..RegisterVariable("r.debugflags", "Debug draw flags", ref _debugFlags, .Config | .Flags, new => OnDebugChange)
+			..RegisterVariable("r.debugflags", "Debug draw flags", ref _debugFlags, .Config | .Flags, new (cvar) => Bgfx.SetDebug(_debugFlags))
 			..RegisterVariable("r.vsync", "Toggles vertical sync", ref _vsync, .Config)
 			..RegisterVariable("r.fullscreen", "Window mode", ref _fullscreenMode, .Config);
 
@@ -145,84 +168,99 @@ namespace SteelEngine.Renderer.BGFX
 			_render3d = new Renderer3D();
 			_render3d.Init(this);
 
-			Bgfx.SetViewClear(0, .Color | .Depth, (.)_clearColor, 1, 1);
+			Resources.AddResourceLoader<SteelEngine.ImageLoader>();
+			Resources.AddResourceLoader<SteelEngine.MeshLoader>();
+			Resources.AddResourceLoader<SteelEngine.ShaderLoader>();
+			Resources.AddResourceLoader<SteelEngine.MaterialLoader>();
 
 			Bgfx.SetDebug(_debugFlags);
-			let defaultShader = CreateProgram("res://shaders/vs_cubes.bin", "res://shaders/fs_cubes.bin");
+			//let defaultShader = CreateProgram("res://shaders/vs_cubes.bin", "res://shaders/fs_cubes.bin");
+			let defaultShaderProgram = Resources.Load<Shader>("res://shaders/cubes.shader");
+			InitializeShader(defaultShaderProgram);
 			{
-				_cube = new .("cube");
-				_cube.shader = defaultShader;
-				_cube.SetData<PositionColorVertex>(.(&cubeVertices, cubeVertices.Count), .(&cubeIndices, cubeIndices.Count));
+				BgfxMesh cube = ?;
+				cube.SetData<Vertex>(.(&CubeMesh.vertices, CubeMesh.vertices.Count), .(&CubeMesh.indices, CubeMesh.indices.Count));
+				//_cube = new Mesh();
+				_cube.mesh = new Mesh();
+				_cube.mesh.[Friend]ResourceId = _meshes.MakeRID(cube);
+				_cube.material = new Material(defaultShaderProgram);
 			}
 			{
-				_metaballsProgram = CreateProgram("res://shaders/vs_metaballs.bin", "res://shaders/fs_metaballs.bin");
+				_metaballsProgram = CreateProgram("res://shader_bin/vs_metaballs.bin", "res://shader_bin/fs_metaballs.bin");
 				_grid = new Grid[kMaxDims*kMaxDims*kMaxDims];
 			}
 			{
-				_raymarchProgram = CreateProgram("res://shaders/vs_raymarching.bin", "res://shaders/fs_raymarching.bin");
+				_raymarchProgram = CreateProgram("res://shader_bin/vs_raymarching.bin", "res://shader_bin/fs_raymarching.bin");
 				_uMtx = CreateUniform("u_mtx", .Mat4, 1);
 				_uLightDirTime = CreateUniform("u_lightDirTime", .Vec4, 1);
 			}
 			{
-				_meshProgram = CreateProgram("res://shaders/vs_mesh.bin", "res://shaders/fs_mesh.bin");
+				let meshProgram = Resources.Load<Shader>("res://shaders/mesh.shader");
+				InitializeShader(meshProgram);
+				//_meshProgram = CreateProgram("res://shaders/vs_mesh.bin", "res://shaders/fs_mesh.bin");
 				_uTime = CreateUniform("u_time", .Vec4, 1);
-				SteelEngine.AssetTypes.Mesh mesh = scope .();
-				mesh.Load("res://models/cube.obj", true);
-				PositionColorVertex[] vert = new:ScopedAlloc! .[mesh.vertexData.Count];
-				uint16[] ind = new:ScopedAlloc! .[mesh.indexData.Count];
 
-				for (int i = 0; i < vert.Count; i++)
-				{
-					let v = ref mesh.vertexData[i];
-					var color = gRand.NextI32();
-					
-					//color = (.)v.color;
-					vert[i] = .(v.position, v.textureCoord, color);
-				}
-				for (int i = 0; i < ind.Count; i++)
-				{
-					ind[i] = mesh.indexData[i];
-				}
-				_mesh = new BgfxMesh("mesh");
-				_mesh.SetData<PositionColorVertex>(vert, ind);
-				_mesh.shader = defaultShader;
+				_mesh.mesh = Resources.Load<Mesh>("res://models/cube.obj");
+				BgfxMesh mesh = .CreateFromMeshWithNormals(_mesh.mesh);
+				_mesh.mesh.[Friend]ResourceId = _meshes.MakeRID(mesh);
+				_mesh.material = new Material(meshProgram);
 			}
 			{
-				SteelEngine.AssetTypes.Image img = scope .();
-				img.LoadPNG("res://textures/head.png");
+				let shader = Resources.Load<Shader>("res://shaders/instancing.shader");
+				InitializeShader(shader);
+				_instanced.mesh = Resources.Load<Mesh>("res://models/cube.obj");
+				_instanced.material = new Material(shader);
+			}
+			{
+				_uLightPosRadius = Bgfx.CreateUniform("u_lightPosRadius", .Vec4, NUM_LIGHTS);
+				_uLightRGBInnerR = Bgfx.CreateUniform("u_lightRgbInnerR", .Vec4, NUM_LIGHTS);
+
+				let shader = Resources.Load<Shader>("res://shaders/bump.shader");
+				InitializeShader(shader);
+				_bump.mesh = Resources.Load<Mesh>("res://models/plane.obj");
+				InitializeMesh(_bump.mesh);
+				_bump.material = new Material(shader);
+
+				using(Image img = Resources.Load<Image>("res://textures/head.png"))
+				{
+					_textureColor = new ImageTexture(img);
+					InitializeTexture2D(_textureColor);
+
+					_uSTexColor = CreateUniform("s_texColor", .Sampler, 1);
+				}
+				using(Image img = Resources.Load<Image>("res://textures/head_normal.png"))
+				{
+					_textureNormal = new ImageTexture(img);
+					InitializeTexture2D(_textureNormal);
+					
+					_uSTexNormal = Bgfx.CreateUniform("s_texNormal", .Sampler, 1);
+				}
 				
-				_texture = new BgfxTexture2D(img.Width, img.Height);
-				img.ApplyToTexture2D(_texture);
 			}
 
+			eye = .(0, 0, 15);
+			rotation = .(0, Math.PI_f, 0);
+			UpdateCameraPos();
 			return .Ok;
 		}
 
-		void DrawCubes()
+		void EXAMPLE_DrawCubes()
 		{
 			for (uint32 yy = 0; yy < 11; ++yy)
 			{
 				for (uint32 xx = 0; xx < 11; ++xx)
 				{
 					Quaternion rotation = .Identity;
-					Matrix44 transform = .Transform(.(-15.0f + float(xx)*3.0f, -15.0f + float(yy)*3.0f), .Identity, .(1, 1, 1));
+					Matrix44 transform = .Transform(.(-15.0f + float(xx)*3.0f, -15.0f + float(yy)*3.0f), rotation, .(1, 1, 1));
 
 					Bgfx.SetTransform(&transform, 1);
 
-					DrawMesh(_cube);
+					DrawMesh(_cube.mesh, _cube.material);
 				}
 			}
-
-			Quaternion rotation = .Identity;
-			Matrix44 transform = .Transform(.(0, 0, 5), .Identity, .(1, 1, 1));
-
-			Bgfx.SetTransform(&transform, 1);
-			float time = Time.TimeSinceStart;
-			Bgfx.SetUniform(_uTime, &time, 1);
-			DrawMesh(_mesh);
 		}
 
-		void DrawMetaballs()
+		void EXAMPLE_DrawMetaballs()
 		{
 			let time = Time.TimeSinceStart;
 
@@ -239,9 +277,9 @@ namespace SteelEngine.Renderer.BGFX
 
 			// Stats.
 			uint32 numVertices = 0;
-			int64 profUpdate = 0;
+			/*int64 profUpdate = 0;
 			int64 profNormal = 0;
-			int64 profTriangulate = 0;
+			int64 profTriangulate = 0;*/
 
 			// Allocate 32K vertices in transient vertex buffer.
 			uint32 maxVertices = (32<<10);
@@ -366,16 +404,36 @@ namespace SteelEngine.Renderer.BGFX
 		}
 
 		
-		void RenderScreenSpaceQuad(uint8 view, Vector2 pos, Vector2 size)
+		void EXAMPLE_RenderScreenSpaceQuad(uint8 view, Vector2 pos, Vector2 size)
 		{
+			
+			float time = Time.DeltaTime;
+			Matrix44 ortho = .Ortho(0, _width, _height, 0, 0, 100, Camera.HANDEDNESS);
+			// Set view and projection matrix for view 0.
+			Bgfx.SetViewTransform(1, null, &ortho);
+
+			Matrix44 mtxx = .RotationX(time);
+			Matrix44 mtxy = .RotationY(time * 0.37f);
+			Matrix44 mtx = mtxx * mtxy;
+			Matrix44 mtxInv = mtx.Inverse;
+			var lightDirModelN = Vector3(-0.4f, -0.5f, -1.0f).Normalized;
+			Vector4 lightDirTime = .(lightDirModelN * mtxInv, time);
+			SetUniform(_uLightDirTime, &lightDirTime, 1);
+
+			Matrix44 vp = _cam.Projection * _cam.View;
+			Matrix44 mvp = vp * mtx;
+			Matrix44 mvpInv = mvp.Inverse;
+			SetUniform(_uMtx, &mvpInv, 1);
+
+
 			Bgfx.TransientVertexBuffer tvb = default;
 			Bgfx.TransientIndexBuffer tib = default;
 
 			const int vertexCount = 4;
 			const int indexCount = 6;
-			if ((VertexDescriptors.Create(typeof(PositionColorVertex)) case .Ok(var layout)) && Bgfx.AllocTransientBuffers(&tvb, &layout, vertexCount, &tib, indexCount) )
+			if ((VertexDescriptors.Create(typeof(PositionTextColorVertex)) case .Ok(var layout)) && Bgfx.AllocTransientBuffers(&tvb, &layout, vertexCount, &tib, indexCount) )
 			{
-				Vertex* vertex = (Vertex*)tvb.data;
+				PositionTextColorVertex* vertex = (PositionTextColorVertex*)tvb.data;
 
 				float zz = 0.0f;
 
@@ -401,14 +459,16 @@ namespace SteelEngine.Renderer.BGFX
 				vertex[3].abgr = (int32)0xffffffff;
 				vertex[3].textCoord = .(minCoord.x, maxCoord.y);
 
-				uint16* indices = (uint16*)tib.data;
+				uint16[6]* indices = (uint16[6]*)tib.data;
 
-				indices[0] = 0;
+				*indices = .(0, 2, 1, 0, 3, 2);
+
+				/*indices[0] = 0;
 				indices[1] = 2;
 				indices[2] = 1;
 				indices[3] = 0;
 				indices[4] = 3;
-				indices[5] = 2;
+				indices[5] = 2;*/
 
 				Bgfx.SetState(.Default, 0);
 				Bgfx.SetTransientIndexBuffer(&tib, 0, indexCount);
@@ -417,31 +477,169 @@ namespace SteelEngine.Renderer.BGFX
 			}
 		}
 
-		void DrawMesh(BgfxMesh mesh)
+		void EXAMPLE_DrawMesh()
 		{
-			mesh.SetBuffers();
-			Bgfx.SetState(.WriteZ | .WriteMask | .CullCcw | .DepthTestLess | .Msaa, 0);
-			Bgfx.Submit(0, mesh.shader, 0, .All);
+			float time = Time.DeltaTime;
+			Quaternion rotation = .FromEulerAngles(0, time * 0.37f, 0); 
+			Matrix44 transform = .Transform(.(0, 0, 10), rotation, .(1, 1, 1));
+
+			Bgfx.SetTransform(&transform, 1);
+			Vector4 vec4time = .(Time.TimeSinceStart);
+			Bgfx.SetUniform(_uTime, &vec4time, 1);
+			DrawMesh(_mesh.mesh, _mesh.material);
 		}
 
-		Vector3 at = .Zero;
-		Vector3 eye = .(5, 0, 5);
-		Vector3 rotation = .Zero;
+		struct InstancedData
+		{
+			public Matrix44 transform;
+			public Color4f color;
+		}
+
+		void EXAMPLE_Instancing()
+		{
+			let caps = Bgfx.GetCapabilities();
+			if (caps.supported.HasFlag(.Instancing))
+			{
+				// 80 bytes stride = 64 bytes for 4x4 matrix + 16 bytes for RGBA color.
+				// 11x11 cubes
+				const uint32 WIDTH = 11;
+				const uint32 HEIGHT = 11;
+				const uint32 INSTANCE_COUNT   = WIDTH * HEIGHT;
+
+				let time = Time.TimeSinceStart;
+
+				if (INSTANCE_COUNT == Bgfx.GetAvailableInstanceDataBuffer(INSTANCE_COUNT, strideof(InstancedData)) )
+				{
+					Bgfx.InstanceDataBuffer idb = ?;
+					Bgfx.AllocInstanceDataBuffer(&idb, INSTANCE_COUNT, strideof(InstancedData));
+
+					InstancedData* data = (InstancedData*)idb.data;
+
+					// Write instance data for 11x11 cubes.
+					for (uint32 yy = 0; yy < HEIGHT; ++yy)
+					{
+						for (uint32 xx = 0; xx < WIDTH; ++xx)
+						{
+							data.transform = .Transform(
+								Vector3(-15.0f + float(xx)*3.0f, -15.0f + float(yy)*3.0f, -5),
+								Quaternion.FromEulerAngles(time + xx*0.21f, time + yy*0.37f, 0),
+								Vector3.One);
+
+							data.color = .(Math.Sin(time+float(xx)/11.0f)*0.5f+0.5f,
+								Math.Cos(time+float(yy)/11.0f)*0.5f+0.5f,
+								Math.Sin(time*3.0f)*0.5f+0.5f,
+								1);
+
+							++data;
+						}
+					}
+
+
+					// Set vertex and index buffer.
+
+					let mesh = _meshes.GetOrDefault(_instanced.mesh.ResourceId);
+					mesh.SetBuffers();
+					/*Bgfx.SetVertexBuffer(0, m_vbh);
+					Bgfx.SetIndexBuffer(m_ibh);*/
+
+					// Set instance data buffer.
+					Bgfx.SetInstanceDataBuffer(&idb, 0, INSTANCE_COUNT);
+
+					// Set render states.
+					//Bgfx.SetState(BGFX_STATE_DEFAULT);
+
+					// Submit primitive for rendering to view 0.
+					//Bgfx.submit(0, m_program);
+					
+					Bgfx.Submit(0, * _shaders.GetOrDefault(_instanced.material.shader.ResourceId), 0, .All);
+					//mesh.Submit();
+				}
+			}
+		}	
+
+		void EXAMPLE_Bump()
+		{
+			float time = Time.TimeSinceStart;
+
+			Vector4[4] lightPosRadius;
+			for (uint32 ii = 0; ii < NUM_LIGHTS; ++ii)
+			{
+				lightPosRadius[ii] = .( Math.Sin( (time*(0.1f + ii*0.17f) + ii*Math.PI_f/2*1.37f ) )*3.0f,
+										Math.Cos( (time*(0.2f + ii*0.29f) + ii*Math.PI_f/2*1.49f ) )*3.0f,
+										-2.5f,
+										5.0f );
+			}
+
+			Bgfx.SetUniform(_uLightPosRadius, &lightPosRadius, NUM_LIGHTS);
+
+
+			Vector4[4] lightRgbInnerR = .(
+				.( 1.0f, 0.7f, 0.2f, 0.8f ),
+				.( 0.7f, 0.2f, 1.0f, 0.8f ),
+				.( 0.2f, 1.0f, 0.7f, 0.8f ),
+				.( 1.0f, 0.4f, 0.2f, 0.8f ),
+			);
+
+			Bgfx.SetUniform(_uLightRGBInnerR, &lightRgbInnerR, NUM_LIGHTS);
+
+			for (uint32 yy = 0; yy < 3; ++yy)
+			{
+				for (uint32 xx = 0; xx < 3; ++xx)
+				{
+					Matrix44 mtx = .Transform(Vector3(-3.0f + float(xx)*3.0f, 0, -3.0f + float(yy)*3.0f), .Identity, .One);
+
+					// Set transform for draw call.
+					Bgfx.SetTransform(&mtx, 1);
+
+					// Set vertex and index buffer.
+					/*bgfx::setVertexBuffer(0, m_vbh);
+					bgfx::setIndexBuffer(m_ibh);*/
+
+					_meshes[_bump.mesh].SetBuffers();
+					/*let m = _meshes.GetOrDefault(_bump.mesh.ResourceId);
+					if (m == null)
+						return;
+
+					m.SetBuffers();*/
+
+					Bgfx.SetTexture(0, _uSTexColor, *_textures[_textureColor], .None);
+					Bgfx.SetTexture(1, _uSTexNormal, *_textures[_textureNormal], .None);
+
+					Bgfx.SetState(.WriteRgb | .WriteA | .WriteZ | .DepthTestLess | .Msaa, 0);
+					// Set render states.
+					/*bgfx::setState(0
+							| BGFX_STATE_WRITE_RGB
+							| BGFX_STATE_WRITE_A
+							| BGFX_STATE_WRITE_Z
+							| BGFX_STATE_DEPTH_TEST_LESS
+							| BGFX_STATE_MSAA
+							);*/
+
+					// Submit primitive for rendering to view 0.
+					//bgfx::submit(0, m_program);*/
+					
+					Bgfx.Submit(0, *_shaders[_bump.material.shader], 0, .All);
+				}
+			}
+		}
+
+		void DrawMesh(Mesh mesh, Material mat)
+		{
+			let m = _meshes.GetOrDefault(mesh.ResourceId);
+			if (m == null)
+				return;
+
+			Bgfx.SetState(.WriteZ | .WriteMask | .CullCcw | .DepthTestLess | .Msaa, 0);
+			m.SetBuffers();
+			Bgfx.Submit(0, *_shaders.GetOrDefault(mat.shader.ResourceId), 0, .All);
+		}
 
 		void UpdateCameraPos()
 		{
-			const float mouseSense = 1f;
+			const float mouseSense = 0.3f;
 			const float speed = 5;
 			const float fastSpeed = 10;
 			let speedDt = (Input.GetKey(.LeftShift) ? fastSpeed : speed) * Time.DeltaTime;
-
-			ClearFlags clearFlags = .None;
-			if (_cam.clearFlags.HasFlag(.Color))
-				clearFlags |= .Color;
-			if (_cam.clearFlags.HasFlag(.Depth))
-				clearFlags |= .Depth;
-
-			Bgfx.SetViewClear(0, clearFlags, *(uint32*)&_cam.clearColor, 1, 1);
 
 			Vector3 dir = .Zero;
 			if (Input.GetKey(.W)) dir.z += speedDt;
@@ -454,7 +652,7 @@ namespace SteelEngine.Renderer.BGFX
 
 			rotation.x += mouseY * mouseSense;
 			rotation.y += mouseX * mouseSense;
-			rotation.x = Math.Clamp(rotation.x, Deg2Rad!(-87), Deg2Rad!(87));
+			rotation.x = Math.Clamp(rotation.x, Deg2Rad!(-89.9f), Deg2Rad!(89.9f));
 
 			let quat = Quaternion.FromEulerAngles(rotation);
 			eye += dir * quat.ToMatrix44();
@@ -463,21 +661,28 @@ namespace SteelEngine.Renderer.BGFX
 			if (Input.GetKey(.LeftControl)) eye.y -= speedDt;
 
 			/*let aspect = _width / float(_height);*/
+			_cam.SetPositionRotation(eye, quat);
+		}
 
-				
+		public void Draw()
+		{
+			if (Input.GetKey(.Mouse0)) 
+				UpdateCameraPos();
+			
+
+			ClearFlags clearFlags = .None;
+			if (_cam.clearFlags.HasFlag(.Color))
+				clearFlags |= .Color;
+			if (_cam.clearFlags.HasFlag(.Depth))
+				clearFlags |= .Depth;
+
+			Bgfx.SetViewClear(0, clearFlags, *(uint32*)&_cam.clearColor, 1, 1);
 			Bgfx.SetViewRect(0, 0, 0, (.)_width, (.)_height);
 			Bgfx.SetViewRect(1, 0, 0, (.)_width, (.)_height);
 			Bgfx.Touch(0);
 
 
 			//view = .LookAt(at, eye, .Up, handedness);
-			_cam.SetPositionRotation(eye, quat);
-
-		}
-
-		public void Draw()
-		{
-			UpdateCameraPos();
 			//proj = .Perspective(Deg2Rad!(60), aspect, 0.1f, 1000, handedness);
 			Matrix44 view, proj;
 			proj = _cam.Projection;
@@ -485,30 +690,13 @@ namespace SteelEngine.Renderer.BGFX
 
 			Bgfx.SetViewTransform(0, &view, &proj);
 
-			DrawCubes();
-			//DrawMetaballs();
+			EXAMPLE_DrawCubes();
+			//EXAMPLE_DrawMetaballs();
+			//EXAMPLE_RenderScreenSpaceQuad(1, .Zero, .(_width, _height));
+			EXAMPLE_DrawMesh();
 
-			float time = Time.TimeSinceStart;
-
-			//var time = Time.TimeSinceStart;
-			Matrix44 ortho = .Ortho(0, _width, _height, 0, 0, 100, Camera.HANDEDNESS);
-			// Set view and projection matrix for view 0.
-			Bgfx.SetViewTransform(1, null, &ortho);
-
-			Matrix44 mtxx = .RotationX(time);
-			Matrix44 mtxy = .RotationY(time * 0.37f);
-			Matrix44 mtx = mtxx * mtxy;
-			Matrix44 mtxInv = mtx.Inverse;
-			var lightDirModelN = Vector3(-0.4f, -0.5f, -1.0f).Normalized;
-			Vector4 lightDirTime = .(lightDirModelN * mtxInv, time);
-			SetUniform(_uLightDirTime, &lightDirTime, 1);
-
-			Matrix44 vp = proj * view;
-			Matrix44 mvp = vp * mtx;
-			Matrix44 mvpInv = mvp.Inverse;
-			SetUniform(_uMtx, &mvpInv, 1);
-
-			//RenderScreenSpaceQuad(1, .Zero, .(_width, _height));
+			//EXAMPLE_Instancing();
+			EXAMPLE_Bump();
 
 			Bgfx.Frame(false);
 		}
@@ -516,7 +704,7 @@ namespace SteelEngine.Renderer.BGFX
 		protected Result<void, FileError> LoadFile(StringView path, String buffer)
 		{
 			System.IO.StreamReader reader = scope .();
-			if (Assets.OpenRead(path, reader) case .Err(let err))
+			if (Resources.OpenRead(path, reader) case .Err(let err))
 				return .Err(.FileOpenError(err));
 
 			if( reader.ReadToEnd(buffer) case .Err(let err) )
@@ -536,6 +724,13 @@ namespace SteelEngine.Renderer.BGFX
 			return .Ok((handle, memory));
 		}
 
+		public Result<(Bgfx.ShaderHandle shaderHandle, Memory* mem)> CreateShader(StringView data)
+		{
+			let memory = Copy(data.Ptr, (uint32)data.Length);
+			let handle = Bgfx.CreateShader(memory);
+			return .Ok((handle, memory));
+		}
+
 		public Result<ProgramHandle> CreateProgram(StringView vertShaderPath, StringView fragShaderPath)
 		{
 			String buffer = scope .();
@@ -551,6 +746,70 @@ namespace SteelEngine.Renderer.BGFX
 			return .Err;
 		}
 
+		public Result<ProgramHandle> CreateProgram(ShaderHandle vert, ShaderHandle frag)
+		{
+			return Bgfx.CreateProgram(vert, frag, true);
+		}
+
+		public Result<void> InitializeShader(Shader shader)
+		{
+			if (shader.ResourceId.IsValid)
+				return .Ok;
+
+			if (CreateShader(shader.FragmentShaderCode) case .Ok(let vert))
+			{
+				if (CreateShader(shader.VertexShaderCode) case .Ok(let frag))
+				{
+					let program =  Bgfx.CreateProgram(vert.shaderHandle, frag.shaderHandle, true);
+					shader.[Friend]ResourceId = _shaders.MakeRID(program);
+					return .Ok;
+				}
+
+				// @TODO(fusion) - free BGFX allocated memory (don't even know if it is needed)
+			}
+			return .Err;
+		}
+
+		public Result<void> InitializeMesh(Mesh mesh)
+		{
+			if (mesh.ResourceId.IsValid)
+			{
+				let handlePtr = _meshes[mesh];
+				if (handlePtr != null)
+				{
+					return .Ok;
+					//return *handlePtr;
+				}
+			}
+				
+			BgfxMesh meshHandle = .CreateFromMeshWithNormals(mesh);
+			mesh.[Friend]ResourceId = _meshes.MakeRID(meshHandle);
+			return .Ok;
+			//return meshHandle;
+		}
+
+		public Result<TextureHandle> InitializeTexture2D(Texture2D texture)
+		{
+			if (texture.ResourceId.IsValid)
+			{
+				let handlePtr = _textures[texture.ResourceId];
+				if (handlePtr != null)
+				{
+					return *handlePtr;
+				}
+			}
+
+			let memory = Bgfx.Copy(texture.Data.Ptr, (uint32)texture.Data.Length);
+			
+			let tex = CreateTexture2d((uint16)texture.Width, (uint16)texture.Height, texture.MipLevels > 1, 1, texture.Format.GetBGFXPixelFormat(), .None, memory);
+			if (tex.Valid)
+			{
+				texture.[Friend]ResourceId = _textures.MakeRID(tex);
+				return tex;
+			}
+
+			return .Err;
+		}
 
 		public void Resize(uint32 width, uint32 height)
 		{
@@ -558,6 +817,33 @@ namespace SteelEngine.Renderer.BGFX
 			_height = height;
 			Bgfx.Reset(_width, _height, .None, .Count);
 			_cam.SetResolution(_width, _height);
+		}
+
+		protected override void DrawMeshInstance(Matrix44 transform, Material mat, Mesh m)
+		{
+			if(m == null)
+				return;
+
+			if(m.ResourceId.IsNull)
+			{
+				InitializeMesh(m);
+			}
+
+			if(mat == null) // @TODO - Use pink_squares shader in this case
+				return;
+
+			if(mat.ResourceId.IsNull)
+			{
+				InitializeShader(mat.shader);
+				InitializeTexture2D(mat.colorTex);
+				InitializeTexture2D(mat.normTex); // Have empty texture prepared so this can be empty
+			}
+
+			Bgfx.SetTexture(0, _uSTexColor, *_textures[mat.colorTex], .None);
+			Bgfx.SetTexture(1, _uSTexNormal, *_textures[mat.normTex], .None);
+			Matrix44 t = transform;
+			SetTransform(&t, 0);
+			DrawMesh(m, mat);
 		}
 	}
 }

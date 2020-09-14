@@ -44,20 +44,21 @@ namespace libpng
 		public png_byte blue;
 	}
 
-struct png_colorspace
+	[CRepr]
+	struct png_colorspace
 	{
-#if PNG_GAMMA_SUPPORTED
-	   png_fixed_point gamma;        /* File gamma */
-#endif
+	#if PNG_GAMMA_SUPPORTED
+	   public png_fixed_point gamma;        /* File gamma */
+	#endif
 
-#if PNG_COLORSPACE_SUPPORTED
-	   png_xy      end_points_xy;    /* End points as chromaticities */
-	   png_XYZ     end_points_XYZ;   /* End points as CIE XYZ colorant values */
-	   png_uint_16 rendering_intent; /* Rendering intent of a profile */
-#endif
+	#if PNG_COLORSPACE_SUPPORTED
+	   public png_xy      end_points_xy;    /* End points as chromaticities */
+	   public png_XYZ     end_points_XYZ;   /* End points as CIE XYZ colorant values */
+	   public png_uint_16 rendering_intent; /* Rendering intent of a profile */
+	#endif
 
 	   /* Flags are always defined to simplify the code. */
-	   png_uint_16 flags;            /* As defined below */
+	   public png_uint_16 flags;            /* As defined below */
 	}
 
 	[CRepr]
@@ -85,10 +86,10 @@ struct png_colorspace
 		public png_byte pixel_depth;    /* number of bits per pixel */
 		public png_byte spare_byte;     /* to align the data, and for future use */
 
-#if PNG_READ_SUPPORTED
+	#if PNG_READ_SUPPORTED
 		/* This is never set during write */
 		public png_byte[8] signature;   /* magic bytes read by libpng from start of file */
-#endif
+	#endif
 
 		/* The rest of the data is optional.  If you are reading, check the
 		 * valid field to see if the information in these are valid.  If you
@@ -96,7 +97,7 @@ struct png_colorspace
 		 * and initialize the appropriate fields below.
 		 */
 
-#if PNG_COLORSPACE_SUPPORTED || PNG_GAMMA_SUPPORTED
+	#if PNG_COLORSPACE_SUPPORTED || PNG_GAMMA_SUPPORTED
 		/* png_colorspace only contains 'flags' if neither GAMMA or COLORSPACE are
 		 * defined.  When COLORSPACE is switched on all the colorspace-defining
 		 * chunks should be enabled, when GAMMA is switched on all the gamma-defining
@@ -108,7 +109,7 @@ struct png_colorspace
 		 * behavior between different libpng builds!)
 		 */
 		public png_colorspace colorspace;
-#endif
+	#endif
 	}
 
 	[CRepr]

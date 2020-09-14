@@ -1,39 +1,55 @@
 using System;
 using System.IO;
 using SteelEngine.Renderer;
+using SteelEngine.Loaders;
 
-namespace SteelEngine.AssetTypes
+namespace SteelEngine
 {
-
-	class Image
+	public class ImageLoader : ResourceLoader
 	{
-		uint8[] _data ~ delete _;
-		public Span<uint8> Data => .(_data);
-		public uint32 Width { get; protected set; }
-		public uint32 Height { get; protected set; }
-		public TextureFormat Format { get; protected set; }
-		public int MemorySize => _data?.Count ?? 0;
-		public bool IsEmpty => (_data == null || _data.Count == 0);
+		StringView[] _extensions = new StringView[](".bmp", ".png") ~ delete _;
 
-		public this()
+		public override Type ResourceType => typeof(Image);
+
+		public override Span<StringView> SupportedExtensions => _extensions;
+
+		public override Result<Resource> Load(StringView absolutePath, StringView originalPath, Stream fileReadStream)
 		{
+			String ext = scope .();
+			if (Path.GetExtension(absolutePath, ext) case .Err)
+			{
+				Log.Error("ImageLoader::Load - Failed to load resource! (Couldn't get file extension)");
+				return .Err;
+			}
 
+			switch (ext)
+			{
+				case ".bmp":
+				{
+					if (LoadBMP(fileReadStream) case .Ok(let val))
+						return val;
+				}
+
+				case ".png":
+				{
+				if (LoadPNG(scope .(fileReadStream)) case .Ok(let val))
+					return val;
+				}	
+			}
+
+			return .Err;
 		}
 
-		public this(uint32 width, uint32 height, TextureFormat format, int8[] data)
+		public override bool HandlesType(System.Type type)
 		{
-
+			return type == typeof(Image);
 		}
 
-		public Result<void, FileError> LoadBMP(StringView path)
+		public static Result<Image> LoadBMP(Stream reader)
 		{
 			const uint BITMAP_SIGNATURE = 0x4d42;
 			const uint BITMAP_FILE_HEADER_SIZE = 14;
 			const uint BITMAP_INFO_HEADER_MIN_SIZE = 40;
-
-			FileStream reader = scope .();
-			if(Assets.OpenFile(path, reader, .Read) case .Err(let err))
-				return .Err(.FileOpenError(err));
 
 			BITMAPFILEHEADER fileHeader = ?;
 			reader.TryRead(Span<uint8>((uint8*)&fileHeader, BITMAP_FILE_HEADER_SIZE));
@@ -84,22 +100,30 @@ namespace SteelEngine.AssetTypes
 				}
 			}
 
-			TextureFormat format;
+			PixelFormat format;
 			switch (info.bits) {
 				case 32:
 					format = .RGBA8;
 				case 24:
 					format = .RGB8;
+
+				case 8: fallthrough;
+				case 4: fallthrough;
+				case 1:
+				{
+					Log.Error("BMPImageLoader - Unsupported image format!");
+					return .Err;
+				}
+
 				default:
 					Assert!(false, "Failed to retrieve image format");
+					return .Err;
 			}
 
-			_data = data;
-
-			return .Ok;
+			return new Image((uint32)info.width, (uint32)info.height, format, data);
 		}
 
-		
+
 		protected static bool PNGCheckResult(libpng.png_image img)
 		{
 			const int32 PNG_IMAGE_WARNING = 1;
@@ -119,12 +143,8 @@ namespace SteelEngine.AssetTypes
 			return true;
 		}
 
-		public Result<void, FileError> LoadPNG(StringView path)
+		public Result<Image> LoadPNG(StreamReader reader)
 		{
-			StreamReader reader = scope .();
-			if(Assets.OpenRead(path, reader) case .Err(let err))
-				return .Err(.FileOpenError(err));
-
 			String resul = scope String();
 			reader.ReadToEnd(resul);
 
@@ -133,7 +153,7 @@ namespace SteelEngine.AssetTypes
 			void* fileData = resul.CStr();
 			uint fsize = (.)resul.Length;
 			int32 success = libpng.png_image_begin_read_from_memory(&pngImg, fileData, fsize);
-			TextureFormat dstFormat = ?;
+			PixelFormat dstFormat = ?;
 			switch(pngImg.format)
 			{
 			case .Gray: dstFormat = .L8;
@@ -144,7 +164,7 @@ namespace SteelEngine.AssetTypes
 			}
 
 			if (!PNGCheckResult(pngImg))
-				return .Err(.FileReadError(.Unknown));
+				return .Err;
 
 			let stride = libpng.ImageRowStride!(pngImg);
 			let bufferSize = libpng.ImageBufferSize!(pngImg, stride);
@@ -153,25 +173,10 @@ namespace SteelEngine.AssetTypes
 			if (!PNGCheckResult(pngImg))
 			{
 				delete buffer;
-				return .Err(.FileReadError(.Unknown));
+				return .Err;
 			}
 
-			_data = buffer;
-			Width = pngImg.width;
-			Height = pngImg.height;
-			Format = dstFormat;
-			
-			return .Ok;
-		}
-
-		public void ApplyToTexture2D(Texture2D texture)
-		{
-			if (!IsEmpty)
-			{
-				texture.SetData(Width, Height, ref _data, Format);
-				texture.Apply();
-			}
-				
+			return new Image(pngImg.width, pngImg.height, dstFormat, buffer);
 		}
 	}
 }

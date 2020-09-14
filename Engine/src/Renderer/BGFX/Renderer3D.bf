@@ -6,9 +6,9 @@ namespace SteelEngine.Renderer.BGFX
 {
 	class Renderer3D
 	{
-		RenderServer _renderServer;
+		BgfxRenderServer _renderServer;
 
-		public Result<void> Init(RenderServer server)
+		public Result<void> Init(BgfxRenderServer server)
 		{
 			_renderServer = server;
 

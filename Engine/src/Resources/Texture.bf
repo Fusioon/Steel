@@ -16,12 +16,13 @@ namespace SteelEngine.Renderer
 
 	}
 
-	public abstract class Texture : RefCounted, IDisposable
+	public abstract class Texture : SharedResource
 	{
-		public abstract uint32 MipLevels { get; }
+		//protected this(Resource from) : base(from) {}
+		/*public abstract uint32 MipLevels { get; }
 
 		public virtual uint MemoryUsage => 0;
-		public abstract TextureFormat Format { get; }
+		public abstract ImageFormat Format { get; }
 
 		protected ~this()
  		{
@@ -41,6 +42,6 @@ namespace SteelEngine.Renderer
 
 		public abstract Result<void> GenerateMipmaps(uint32 mipLevel);
 
-		public abstract void FreeSystemMemory();
+		public abstract void FreeSystemMemory();*/
 	}
 }

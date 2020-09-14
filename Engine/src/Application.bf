@@ -11,8 +11,13 @@ using SteelEngine.Renderer.BGFX;
 
 namespace SteelEngine
 {
-	public abstract class Application
+	public class Application : Singleton<Application>
 	{
+		public virtual StringView CompanyName => "SteelCorp";
+		public virtual StringView ProductName => "SteelEngine";
+		public virtual Version Version => .(0, 0, 0, 1);
+		public virtual bool IsEditor => false;
+		
 		private bool _isRunning = false;
 
 		private Window _window ~ delete _;
@@ -24,10 +29,15 @@ namespace SteelEngine
 		private List<EntityId> _entitiesToRemoveFromStore ~ delete _;
 		private GLFWInputManager _inputManager = new GLFWInputManager() ~ delete _;
 		private GameConsole _gameConsole = new GameConsole() ~ delete _;
-		private RenderServer _renderServer = new RenderServer() ~ delete _;
+		private BgfxRenderServer _renderServer = new BgfxRenderServer() ~ delete _;
+		private IGame _game;
+
+		public Window MainWindow => _window;
 
 		public this()
 		{
+			FreeType.FT_Library lib = ?;
+			FreeType.FT_Init_FreeType(&lib);
 			
 		}
 
@@ -42,7 +52,7 @@ namespace SteelEngine
 		/// </summary>
 		public BaseSystem CreateSystem<T>() where T : BaseSystem
 		{
-			let system = new T(this);
+			let system = new T();
 			_systems.Add(system);
 
 			for (let item in Entity.EntityStore)
@@ -64,18 +74,20 @@ namespace SteelEngine
 
 		public Entity CreateEntity()
 		{
-			return new Entity(this);
+			return new Entity();
 		}
 
-		public void Run()
+		public void Run(String[] args, IGame game)
 		{
-			Start();
-
+			_game = game;
+			Setup();
+			Init();
+			
 			var windowConfig = WindowConfig(1280, 720, "SteelEngine", false, true);
 			_window = new Window(windowConfig, _eventCallback);
 
-			Init();
-
+			
+			Start();
 			_isRunning = true;
 			while (_isRunning)
 			{
@@ -87,40 +99,21 @@ namespace SteelEngine
 			Cleanup(); 
 		}
 
-		// Called before window is created
-		protected abstract void OnStart();
-
-		// Gets called right before the window is created
-		private void Start()
+		
+		protected virtual void Setup()
 		{
 			Log.AddHandle(Console.Out);
 			// @TODO(fusion) add way to set this through command line arguments or cvar
-			Assets.[Friend]Initialize("D:\\SteelEngine\\content");
+			// C:\\Users\\user\\Documents\\Beef\\content
+			Resources.[Friend]Initialize("D:\\SteelEngine\\content", CompanyName, ProductName);
+			//Resources.[Friend]Initialize("C:\\Users\\user\\Documents\\Beef\\content", CompanyName, ProductName);
 			_gameConsole.Initialize(scope String[]("config.cfg", "res://config.cfg"));
 
-			_components = new Dictionary<ComponentId, BaseComponent>();
-			_componentsToDelete = new List<BaseComponent>();
-			_entitiesToRemoveFromStore = new List<EntityId>();
-
-			_systems = new List<BaseSystem>();
-			// The order of these systems will greatly affect the behavior of the engine.
-			// As functionality is added, the order of these updates should become more established.
-			// Maybe some kind of priority filtering could be added to make sure that systems execute in a defined order established at runtime.
-			CreateSystem<Physics2dSystem>();
-			CreateSystem<Physics3dSystem>();
-			CreateSystem<Render3DSystem>();
-			CreateSystem<RenderSpriteSystem>();
-			CreateSystem<RenderTextSystem>();
-			CreateSystem<SoundSystem>();
-			CreateSystem<BehaviorSystem>();
-
-			OnStart();
+			_game.Setup();
 		}
 
-		// Called after window creation
-		protected abstract void OnInit();
-
-		private void Init()
+		// Gets called right before the window is created
+		protected virtual void Start()
 		{
 			_renderServer.Init(_window);
 
@@ -137,15 +130,33 @@ namespace SteelEngine
 				}
 			}
 
-			OnInit();
+			_game.Start();
 		}
 
-		// Gets called when the window is destroyed
-		protected abstract void OnCleanup();
-
-		private void Cleanup()
+		protected virtual void Init()
 		{
-			OnCleanup();
+			_components = new Dictionary<ComponentId, BaseComponent>();
+			_componentsToDelete = new List<BaseComponent>();
+			_entitiesToRemoveFromStore = new List<EntityId>();
+
+			_systems = new List<BaseSystem>();
+			// The order of these systems will greatly affect the behavior of the engine.
+			// As functionality is added, the order of these updates should become more established.
+			// Maybe some kind of priority filtering could be added to make sure that systems execute in a defined order established at runtime.
+			CreateSystem<Physics2dSystem>();
+			CreateSystem<Physics3dSystem>();
+			CreateSystem<Render3DSystem>();
+			CreateSystem<RenderSpriteSystem>();
+			CreateSystem<RenderTextSystem>();
+			CreateSystem<SoundSystem>();
+			CreateSystem<BehaviorSystem>();
+
+			_game.Init();
+		}
+
+		protected virtual void Cleanup()
+		{
+			_game.Shutdown();
 
 			_window.Destroy();
 
@@ -189,9 +200,7 @@ namespace SteelEngine
 			return true;
 		}
 
-		protected abstract void OnUpdate();
-
-		private void Update()
+		protected virtual void Update()
 		{
 			let dt = Time.[Friend]Update();
 
@@ -200,6 +209,8 @@ namespace SteelEngine
 			DeleteQueuedComponents();
 			DeleteQueuedEntities();
 
+			_game.Update();
+
 			for (let system in _systems)
 			{
 				system.[Friend]PreUpdate();
@@ -207,15 +218,10 @@ namespace SteelEngine
 				system.[Friend]PostUpdate();
 			}
 
-			OnUpdate();
 		}
 
-		protected virtual void OnDraw() {}
-
-		private void Draw()
+		protected virtual void Draw()
 		{
-			OnDraw();
-
 			for (let system in _systems)
 			{
 				system.[Friend]Draw();
@@ -322,6 +328,12 @@ namespace SteelEngine
 			}
 			_entitiesToRemoveFromStore.Add(entity.Id);
 			return true;
+		}
+
+		public virtual void Quit()
+		{
+			// @TODO - override in editor to exit play mode
+			_isRunning = false;
 		}
 	}
 }

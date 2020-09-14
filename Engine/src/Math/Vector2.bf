@@ -9,24 +9,28 @@ namespace SteelEngine
 		public T[2] data;
 
 		// Creates a new Vector with default values
+		[Inline]
 		public this()
 		{
 			data = default;
 		}
 
 		// Creates a new Vector and sets all components to v
+		[Inline]
 		public this(T v)
 		{
 		 	data = T[](v, v);
 		}
 
 		// Creates a new Vector with given x, y components
+		[Inline]
 		public this(T x, T y)
 		{
 			data = T[](x, y);
 		}
 
 		// Creates a new Vector with given array (0 = x, 1 = y)
+		[Inline]
 		public this(T[2] values)
 		{
 			data = values;
@@ -34,27 +38,29 @@ namespace SteelEngine
 
 		public T x
 		{
-			[Inline] get { return data[0]; } 
-			[Inline] set mut { data[0] = value; }
+			[Inline] get => data[0];  
+			[Inline] set mut => data[0] = value;
 		}
 		public T y
 		{
-			[Inline] get { return data[1]; }
-			[Inline] set mut { data[1] = value; }
+			[Inline] get => data[1];
+			[Inline] set mut => data[1] = value;
 		}
 
 		public T this[int i]
 		{
-			[Inline] get { return data[i]; }
-			[Inline] set mut { data[i] = value; }
+			[Inline] get => data[i]; 
+			[Inline] set mut => data[i] = value;
 		}
 
+		[Inline]
 		public static bool operator ==(Self v1, Self v2)
 		{
 		    return (v1.x == v2.x) &&
 		        (v1.y == v2.y);
 		}
 
+		[Inline]
 		public static bool operator !=(Self value1, Self value2)
 		{
 		    return !(value1 == value2);
@@ -76,13 +82,13 @@ namespace SteelEngine
 
 	public extension Vector2<T> where T : operator implicit int
 	{
-		public static Self Zero => .(0, 0);
-		public static Self One => .(1, 1);
+		[Inline] public static Self Zero => .(0, 0);
+		[Inline] public static Self One => .(1, 1);
 
-		public static Self Left => .(1, 0);
-		public static Self Right => .(-1, 0);
-		public static Self Up => .(0, 1);
-		public static Self Down => .(0, -1);
+		[Inline] public static Self Left => .(1, 0);
+		[Inline] public static Self Right => .(-1, 0);
+		[Inline] public static Self Up => .(0, 1);
+		[Inline] public static Self Down => .(0, -1);
 	}
 
 	public extension Vector2<T>
@@ -103,98 +109,111 @@ namespace SteelEngine
 
 	public extension Vector2<T> where T : operator T + T, operator T - T, operator T * T, operator T / T, operator -T
 	{
+		[Inline]
 		public void operator+=(Self rv) mut
 		{
 			x += rv.x;
 			y += rv.y;
 		}
 
+		[Inline]
 		public static Self operator+(Self lv, Self rv)
 		{
 			return .(lv.x + rv.x, lv.y + rv.y);
 		}
 
+		[Inline]
 		public void operator+=(T rv) mut
 		{
 			x += rv;
 			y += rv;
 		}
 
-		[Commutable]
+		[Inline, Commutable]
 		public static Self operator+(Self lv, T rv)
 		{
 			return .(lv.x + rv, lv.y + rv);
 		}
 
+		[Inline]
 		public static Self operator-(Self lv)
 		{
 			return .(-lv.x, -lv.y);
 		}
 
+		[Inline]
 		public void operator-=(Self rv) mut
 		{
 			x -= rv.x;
 			y -= rv.y;
 		}
 
+		[Inline]
 		public static Self operator-(Self lv, Self rv)
 		{
 			return .(lv.x - rv.x, lv.y - rv.y);
 		}
 
+		[Inline]
 		public void operator-=(T rv) mut
 		{
 			x -= rv;
 			y -= rv;
 		}
 
-		[Commutable]
+		[Inline, Commutable]
 		public static Self operator-(Self lv, T rv)
 		{
 			return .(lv.x - rv, lv.y - rv);
 		}
 
+		[Inline]
 		public void operator*=(Self rv) mut
 		{
 			x *= rv.x;
 			y *= rv.y;
 		}
 
+		[Inline]
 		public static Self operator*(Self lv, Self rv)
 		{
 			return .(lv.x * rv.x, lv.y * rv.y);
 		}
 
+		[Inline]
 		public void operator*=(T rv) mut
 		{
 			x *= rv;
 			y *= rv;
 		}
 
-		[Commutable]
+		[Inline, Commutable]
 		public static Self operator*(Self lv, T rv)
 		{
 			return .(lv.x * rv, lv.y * rv);
 		}
 
+		[Inline]
 		public void operator/=(Self rv) mut
 		{
 			x /= rv.x;
 			y /= rv.y;
 		}
 
+		[Inline]
 		public static Self operator/(Self lv, Self rv)
 		{
 			return .(lv.x / rv.x, lv.y / rv.y);
 		}
 
+		[Inline]
 		public void operator/=(T rv) mut
 		{
 			x *= rv;
 			y *= rv;
 		}
 
-		[Commutable]
+		[Inline, Commutable]
 		public static Self operator/(Self lv, T rv)
 		{
 			return .(lv.x / rv, lv.y / rv);
@@ -203,11 +222,13 @@ namespace SteelEngine
 		/// <returns>
 		/// Squared length of this vector
 		/// </returns>
+		[Inline]
 		public T LengthSquared=> x * x + y * y;
 
 		/// <returns>
 		/// Squared distance between two vectors
 		/// </returns>
+		[Inline]
 		public static T DistanceSquared(Self v1, Self v2)
 		{
 			return (v1 - v2).LengthSquared;
@@ -223,6 +244,7 @@ namespace SteelEngine
 		/// <returns>
 		///	Magnitude of vector
 		/// </returns>
+		[Inline]
 		public T Length => (T)System.Math.Sqrt(LengthSquared);
 
 		/// <summary>
@@ -242,6 +264,7 @@ namespace SteelEngine
 		/// </returns>
 		public Self Normalized
 		{
+			[Inline]
 			get
 			{
 				var tmp = this;
@@ -266,6 +289,7 @@ namespace SteelEngine
 		/// <returns>
 		/// Distance between two vectors
 		/// </returns>
+		[Inline]
 		public static T Distance(Self v1, Self v2)
 		{
 			return (v1 - v2).Length;
@@ -274,11 +298,18 @@ namespace SteelEngine
 		/// <returns>
 		/// Vector with magnitude clamped to value
 		/// </returns>
+		[Inline]
 		public static Self ClampMagnitude(Self v, T value)
 		{
 			let length = v.Length;
 			let factor = value / length;
 			return .(v.x * factor, v.y * factor);
+		}
+
+		[Inline]
+		public static bool IsEqualsApprox(Self v1, Self v2)
+		{
+			return Helpers.IsEqualsApprox(v1.x, v2.x) && Helpers.IsEqualsApprox(v1.y, v2.y);
 		}
 	}
 
@@ -290,6 +321,7 @@ namespace SteelEngine
 		/// <returns>
 		///	Vector containing interpolated value
 		/// </returns>
+		[Inline]
 		public static Self Lerp(Self v1, Self v2, T value)
 		{
 			return .(v1.x + value * (v2.x - v1.x), v1.y + value * (v2.y - v1.y));
@@ -298,6 +330,7 @@ namespace SteelEngine
 		/// <returns>
 		/// Dot product of vectors
 		/// </returns>
+		[Inline]
 		public static T DotProduct(Self v1, Self v2)
 		{
 			return v1.x * v2.x + v1.y * v2.y;
@@ -307,11 +340,13 @@ namespace SteelEngine
 
 	public extension Vector2<T> where T : operator T <=> T
 	{
+		[Inline]
 		public static Self Min(Self v1, Self v2)
 		{
 			return .(Math.Min(v1.x, v2.x), Math.Min(v1.y, v2.y));
 		}
 
+		[Inline]
 		public static Self Max(Self v1, Self v2)
 		{
 			return .(Math.Max(v1.x, v2.x), Math.Max(v1.y, v2.y));

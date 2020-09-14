@@ -3,4 +3,5 @@ Dependencies = {corlib = "*", SteelEngine = "*"}
 
 [Project]
 Name = "BasicSteelGame"
+TargetType = "BeefLib"
 StartupObject = "BasicSteelGame.Program"

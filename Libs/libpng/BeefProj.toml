@@ -6,6 +6,7 @@ TargetType = "BeefLib"
 StartupObject = "Program"
 
 [Configs.Debug.Win64]
+BuildCommandsOnCompile = "IfFilesChanged"
 LibPaths = ["$(ProjectDir)/dist/x64/libpng.lib"]
 PostBuildCmds = ["CopyToDependents(\"$(ProjectDir)/dist/x64/*.dll\")"]
 

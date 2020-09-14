@@ -702,7 +702,7 @@ namespace tinyobj
 				if (token[0] == 'l' && IsWhitespace(token[1]))
 				{
 					i += 2;
-					__line_t line;
+					//__line_t line;
 					err.AppendF("Lines are not currently not supported! Line: {0}\n", lineNum);
 				}
 
@@ -710,7 +710,7 @@ namespace tinyobj
 				if (token[0] == 'p' && IsWhitespace(token[1]))
 				{
 					i += 2;
-					__points_t pts;
+					//__points_t pts;
 					err.AppendF("Points are not currently not supported! Line: {0}\n", lineNum);
 				}
 

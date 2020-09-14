@@ -4,11 +4,11 @@ using Bgfx;
 
 namespace SteelEngine.Renderer.BGFX
 {
-	class BgfxMesh : Mesh
+	struct BgfxMesh : IDisposable
 	{
+		public Bgfx.VertexLayout* VertexLayout=> VertexDescriptors.Get(_vertexType);
 
-		public Bgfx.VertexLayout* VertexLayout => _valid ? VertexDescriptors.Get(_vertexType) : null;
-		public ProgramHandle shader;
+		public bool IsValid { get; private set mut; }
 
 		Type _vertexType;
 		VertexBufferHandle _vertexBuffer;
@@ -16,9 +16,15 @@ namespace SteelEngine.Renderer.BGFX
 		uint32 _vertexCount;
 		uint32 _indexCount;
 
-		public this(StringView name)
+		public this()
 		{
-			_name = new .(name);
+			this = default;
+		}
+
+		public void Dispose()
+		{
+			Bgfx.DestroyVertexBuffer(_vertexBuffer);
+			Bgfx.DestroyIndexBuffer(_indexBuffer);
 		}
 
 		public void SetBuffers()
@@ -27,13 +33,7 @@ namespace SteelEngine.Renderer.BGFX
 			Bgfx.SetIndexBuffer(_indexBuffer, 0, _indexCount);
 		}
 
-		protected override void Delete()
-		{
-			Bgfx.DestroyVertexBuffer(_vertexBuffer);
-			Bgfx.DestroyIndexBuffer(_indexBuffer);
-		}
-
-		protected override Result<void> SetData(Type vertexType, void* vertices, uint32 vertexCount, uint16* indices, uint32 indexCount)
+		public Result<void> SetData(Type vertexType, void* vertices, uint32 vertexCount, uint16* indices, uint32 indexCount) mut
 		{
 			_vertexType = vertexType;
 			if (VertexDescriptors.Create(vertexType) case .Ok(var layout))
@@ -49,9 +49,68 @@ namespace SteelEngine.Renderer.BGFX
 					_indexCount = indexCount;
 				}
 				return .Ok;
-			}	
+			}
 
 			return .Err;
 		}
+
+		public Result<void> SetData<TVertex>(Span<TVertex> vertices, Span<uint16> indices) mut
+		{
+			if (SetData(typeof(TVertex), vertices.Ptr, (uint32)vertices.Length, indices.Ptr, (uint32)indices.Length) case .Ok)
+			{
+				return .Ok;
+			}
+			
+			return .Err;
+		}
+
+		static Vector3 GetVertexNormalFlatShaded(Vector3 v, Vector3 v1, Vector3 v2)
+		{
+			return Vector3.CrossProduct(v1 - v, v2 - v);
+		}
+
+
+		public static Self CreateFromMesh(Mesh m)
+		{
+			//_mesh.Load("res://models/cube.obj", true);
+			PositionColorVertex[] vert = new:ScopedAlloc! .[m.vertexData.Count];
+			uint16[] ind = new:ScopedAlloc! .[m.indexData.Count];
+
+			for (int i = 0; i < vert.Count; i++)
+			{
+				var v = ref m.vertexData[i];
+				//v.color = (.)gRand.NextI32();
+				vert[i] = .(v.position, (.)v.color);
+			}
+
+			
+			m.indexData.CopyTo(ind);
+			
+			return Self()..SetData<PositionColorVertex>(vert, ind);
+		}
+
+		public static Self CreateFromMeshWithNormals(Mesh m)
+		{
+			//_mesh.Load("res://models/cube.obj", true);
+			PositionColorNormalVertex[] vert = new:ScopedAlloc! .[m.indexData.Count];
+			uint16[] ind = new:ScopedAlloc! .[m.indexData.Count];
+
+			for (int i = 0; i < vert.Count; i++)
+			{
+				let index = m.indexData[i];
+				var v = ref m.vertexData[index];
+
+				Vector3 norm = v.normal;
+				vert[i] = .(v.position, norm, v.textureCoord, (.)v.color);
+
+				ind[i] = (.)i;
+			}
+
+			
+			//m.indexData.CopyTo(ind);
+			
+			return Self()..SetData<PositionColorNormalVertex>(vert, ind);
+		}
+
 	}
 }

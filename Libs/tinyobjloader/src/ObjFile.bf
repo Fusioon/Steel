@@ -12,18 +12,15 @@ namespace tinyobj
 		public String Errors ~ delete _; 
 
 
-		public attrib_t attrs ~ delete _;
-		public List<shape_t> shapes ~ DeleteContainerAndItems!(_);
-		public List<material_t> materials ~ delete _;
+		public attrib_t attrs = new .() ~ delete _;
+		public List<shape_t> shapes = new .() ~ DeleteContainerAndItems!(_);
+		public List<material_t> materials = new .() ~ delete _;
 
 		public this() { }
 		public ~this() { }
 
 		public Result<void> ParseFromFile(StringView filePath)
 		{
-			attrs = new .();
-			shapes = new .();
-			materials = new .();
 			var sr = scope StreamReader();
 			switch (sr.Open(filePath))
 			{
@@ -44,7 +41,7 @@ namespace tinyobj
 			return .Err;
 		}
 
-		public Result<void> ParseFromStream(FileStream fs)
+		public Result<void> ParseFromStream(Stream fs)
 		{
 			Valid = LoadObj(ref attrs, ref shapes, ref materials, out Warnings, out Errors, scope .(fs), null, true, true);
 			if(Valid) return .Ok;

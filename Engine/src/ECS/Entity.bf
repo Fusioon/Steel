@@ -9,9 +9,8 @@ namespace SteelEngine.ECS
 
 	public class Entity
 	{
-		public this(Application app)
+		public this()
 		{
-			App = app;
 			Id = GetNextId();
 			IsEnabled = true;
 
@@ -22,8 +21,6 @@ namespace SteelEngine.ECS
 		{
 			EntityStore = new Dictionary<EntityId, Entity>();
 		}
-
-		public Application App { get; private set; }
 
 		public static Dictionary<EntityId, Entity> EntityStore { get; private set; };
 
@@ -50,7 +47,18 @@ namespace SteelEngine.ECS
 				return false;
 			}
 			component.Parent = this;
-			return App.[Friend]AddComponent(component);
+			return Application.Instance.[Friend]AddComponent(component);
+		}
+
+		public T AddComponent<T>() where T : BaseComponent
+		{
+			let component = new T();
+			if (AddComponent(component))
+			{
+				return component;
+			}
+
+			return default;
 		}
 
 		/// <summary>
@@ -65,7 +73,7 @@ namespace SteelEngine.ECS
 			{
 				return false;
 			}
-			return App.[Friend]RemoveComponent(component);
+			return Application.Instance.[Friend]RemoveComponent(component);
 		}
 
 		private static EntityId _nextId = 0;
@@ -77,7 +85,7 @@ namespace SteelEngine.ECS
 
 		public ~this()
 		{
-			App.[Friend]RemoveEntity(this);
+			Application.Instance.[Friend]RemoveEntity(this);
 		}
 
 		static ~this()

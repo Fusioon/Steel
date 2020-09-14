@@ -19,7 +19,7 @@ namespace SteelEngine.Console
 
 		public void Resize(int newSize)
 		{
-			if (newSize <= 0 && newSize != _history.Count)
+			if (newSize <= 0 || newSize == _history.Count)
 				return;
 
 			_historyPos = 0;
@@ -32,16 +32,24 @@ namespace SteelEngine.Console
 			{
 				newHistory[i] = StringAt(i+1);
 			}
-			
+			i++;
+			if (i < _history.Count && newHistory.Count > _history.Count )
+			{
+				_history.CopyTo(newHistory, i, i, _history.Count - i);
+				i = _history.Count;
+			}	
+
 			// Delete elements that did not fit into new history
-			for (i = i+1; i <= _count; i++)
+			for (; i <= _count; i++)
 				delete StringAt(i);
+			for (i = _count; i < _history.Count; i++)
+				delete _history[i];
 
 			// Allocate elements that were not copied from old history
 			for (i = _history.Count; i < newHistory.Count; i++)
 				newHistory[i] = new String();
 
-			_count = Math.Min(_history.Count, newHistory.Count);
+			_count = Math.Min(_count, newHistory.Count);
 			_addPos = _count - 1;
 
 			delete _history;
@@ -96,7 +104,7 @@ namespace SteelEngine.Console
 				return default;
 
 			if (_count < _history.Count)
-				return _history[_addPos - index + 1];
+				return _history[_addPos - Math.Min(_count, index) + 1];
 
 			if (index >= _count)
 				return _history[(_addPos+1) % _count];
