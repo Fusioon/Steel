@@ -3,7 +3,7 @@ namespace SteelEngine.Renderer
 {
 	public class ImageTexture : Texture2D
 	{
-		Image _img ~ _.Dispose();
+		Image _img ~ _.UnrefSafe();
 		public Image Image => _img;
 
 		public override Span<uint8> Data => _img.Data;

@@ -8,6 +8,7 @@ namespace SteelEngine.Console
 		{
 			let currentVal = result;
 			String lowercase = scope String(args[0])..ToLower();
+			didChange = false;
 
 			switch (lowercase)
 			{

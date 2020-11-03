@@ -10,13 +10,19 @@ namespace SteelEngine
 		public StringView VertexShaderCode => _vertShaderCode;
 		public StringView FragmentShaderCode => _fragShaderCode;
 
-		protected override void Release()
+		protected override Result<void> OnUnload()
 		{
 			base.Release();
+			return .Ok;
 		}
 
-		public this(String vert, String frag)
+		public void SetData(String vert, String frag)
 		{
+			Assert!(vert != _vertShaderCode);
+			Assert!(frag != _fragShaderCode);
+
+			delete _vertShaderCode;
+			delete _fragShaderCode;
 			_vertShaderCode = vert;
 			_fragShaderCode = frag;
 		}
@@ -24,14 +30,9 @@ namespace SteelEngine
 
 	public class Material : Resource
 	{
-		public Shader shader ~ _.DisposeSafe();
-		public Texture2D colorTex ~ _.DisposeSafe();
-		public Texture2D normTex ~ _.DisposeSafe();
-
-		public this(Shader shader)
-		{
-			this.shader = shader;
-		}
+		public Shader shader ~ _.UnrefSafe();
+		public Texture2D colorTex ~ _.UnrefSafe();
+		public Texture2D normTex ~ _.UnrefSafe();
 	}
 
 }

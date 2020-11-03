@@ -3,17 +3,13 @@ using System.IO;
 
 namespace SteelEngine
 {
-	class ShaderLoader : ResourceLoader
+	class ShaderLoader : ResourceLoader<Shader>
 	{
-		public override Type ResourceType => typeof(Shader);
+		/*static var EXTENSIONS = StringView[](".shader");
+		public override Span<StringView> SupportedExtensions => .(&EXTENSIONS, EXTENSIONS.Count);*/
+		public override Span<StringView> SupportedExtensions => default;
 
-		static var EXTENSIONS = StringView[](".shader");
-		public override Span<StringView> SupportedExtensions
-		{
-			get => .(&EXTENSIONS, EXTENSIONS.Count);
-		}
-
-		public override Result<Resource> Load(StringView absolutePath, StringView originalPath, Stream fileReadStream)
+		public override Result<void> Load(StringView absolutePath, StringView originalPath, Stream fileReadStream, Shader r_shader)
 		{
 			StreamReader reader = scope .(fileReadStream);
 			String shaderPath = scope .();
@@ -25,7 +21,7 @@ namespace SteelEngine
 				reader.ReadLine(shaderPath);
 
 				StreamReader shaderReader = scope .();
-				Resources.OpenRead(shaderPath, shaderReader);
+				ResourceManager.OpenRead(shaderPath, shaderReader);
 				vertShader = new String();
 				shaderReader.ReadToEnd(vertShader);
 			}
@@ -34,17 +30,14 @@ namespace SteelEngine
 				reader.ReadLine(shaderPath);
 
 				StreamReader shaderReader = scope .();
-				Resources.OpenRead(shaderPath, shaderReader);
+				ResourceManager.OpenRead(shaderPath, shaderReader);
 				fragShader = new String();
 				shaderReader.ReadToEnd(fragShader);
 			}
-			
-			return .Ok(new Shader(vertShader, fragShader));
-		}
 
-		public override bool HandlesType(Type type)
-		{
-			return type == typeof(Shader);
+			r_shader.SetData(vertShader, fragShader);
+
+			return .Ok;
 		}
 	}
 }

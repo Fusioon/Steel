@@ -5,7 +5,7 @@ using SteelEngine.Console;
 
 namespace SteelEngine
 {
-	class GameConsole
+	class GameConsole : Singleton<GameConsole>
 	{
 		struct ConfigVarValue : IDisposable
 		{
@@ -30,9 +30,6 @@ namespace SteelEngine
 			}
 		}
 
-		static Self _instance;
-		public static Self Instance => _instance;
-
 		Dictionary<StringView, CVar> _cvars = new Dictionary<StringView, CVar>() ~ delete _;
 		Dictionary<StringView, OnCVarChange> _cvarChangedCallbacks = new Dictionary<StringView, OnCVarChange>() ~ delete _;
 		Dictionary<StringView, ConfigVarValue> _configVars = new Dictionary<StringView, ConfigVarValue>() ~ delete _;
@@ -54,11 +51,6 @@ namespace SteelEngine
 		bool _opened = false;
 		public bool IsOpen => _opened;
 
-		public this()
-		{
-			_instance = this;
-		}
-
 		public ~this()
 		{
 		 	for (let cvar in _cvars.Values)
@@ -74,7 +66,7 @@ namespace SteelEngine
 				val.Dispose();
 		}
 
-		public void Initialize(Span<String> configFiles)
+		private void Initialize(Span<String> configFiles, CommandLineArgs args)
 		{
 			Log.AddCallback(new (level, str) =>
 			{
@@ -89,7 +81,16 @@ namespace SteelEngine
 				}
 			}
 
-			RegisterVariable("console.historysize", "Size of commands history.", ref _historySize, .Config, new (cvar) => { _historySize = Math.Max(1, _historySize); History.Resize(_historySize); } );
+			String tmp = scope .();
+			for(var a in args.GameConsoleArgs)
+			{
+				tmp.Clear();
+				tmp.AppendF("{} {}", a.key, a.value);
+				ParseAndStoreConfigValue(tmp);
+				EnqueueNoHistory(tmp);
+			}
+
+			RegisterVariable("console.historysize", "Size of commands history.", ref _historySize, .Config, new (cvar) => History.Resize((_historySize = Math.Max(1, _historySize))) );
 			_history = new CommandsHistory(_historySize);
 
 			RegisterVariable("console.maxlines", "Maximum lines console output can store (-1 for unlimited)", ref _maxLines, .Config, new (cvar) => ResizeOutput() );
@@ -434,6 +435,39 @@ namespace SteelEngine
 			return .Ok;
 		}
 
+
+		private void ParseAndStoreConfigValue(StringView input)
+		{
+			List<StringView> tokens = scope .();
+
+			int i = 0;
+			int start = 0;
+
+			String line = new .();
+			defer delete line;
+
+			while (ConsoleLineParser.Tokenize(input, ref i, ref start, tokens, line))
+			{
+				if (tokens.Count < 2)
+					continue;
+
+				let name = tokens[0];
+				if (_configVars.GetAndRemove(name) case .Ok(let val))
+				{
+					val.value.Dispose();
+				}
+
+				StringView[] args = new StringView[tokens.Count-1];
+				tokens.CopyTo(1, args, 0, tokens.Count-1);
+				_configVars.Add(name, ConfigVarValue()
+				{
+					line = line,
+					args = args
+				});
+				line = new .();
+			}
+		}
+
 		private Result<void, FileOpenError> LoadConfigFile(StringView path)
 		{
 			StreamReader reader = scope .();
@@ -441,41 +475,13 @@ namespace SteelEngine
 				return .Err(err);
 
 			String buffer = scope .();
-			List<StringView> tokens = scope .();
-
-			String line = new .();
 
 			while (reader.ReadLine(buffer) case .Ok)
 			{
-				int i = 0;
-				int start = 0;
-				
-				while (ConsoleLineParser.Tokenize(buffer, ref i, ref start, tokens, line))
-				{
-					if (tokens.Count < 2)
-						continue;
-
-					let name = tokens[0];
-					if (_configVars.GetAndRemove(name) case .Ok(let val))
-					{
-						val.value.Dispose();
-					}
-
-					StringView[] args = new StringView[tokens.Count-1];
-					tokens.CopyTo(1, args, 0, tokens.Count-1);
-					_configVars.Add(name, ConfigVarValue()
-					{
-						line = line,
-						args = args
-					});
-					line = new .();
-					
-				}
-
+				ParseAndStoreConfigValue(buffer);
 				buffer.Clear();
 			}
 
-			delete line;
 			return .Ok;
 		}
 

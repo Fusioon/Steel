@@ -16,5 +16,17 @@ namespace SteelEngine.ECS.Components
 			[Inline] get => matrix.columns[3].xyz;
 			[Inline] set mut => matrix.columns[3] = .(value, 1);
 		}
+
+		public Quaternion Rotation
+		{
+			[Inline] get => Quaternion.FromMatrix(matrix.RotationMatrix);
+			[Inline] set mut {  }
+		}
+
+		public Quaternion Scale
+		{
+			[Inline] get => default;
+			[Inline] set mut {  }
+		}
 	}
 }

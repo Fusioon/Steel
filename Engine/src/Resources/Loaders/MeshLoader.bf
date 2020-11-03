@@ -5,15 +5,15 @@ using System.Collections;
 
 namespace SteelEngine
 {
-	public class MeshLoader : ResourceLoader
+	public class MeshLoader : ResourceLoader<Mesh>
 	{
-		StringView[] _extensions = new StringView[](".obj") ~ delete _;
+		/*static var EXTENSIONS = StringView[](".obj");
 
-		public override Type ResourceType => typeof(Mesh);
+		public override Span<StringView> SupportedExtensions => .(&EXTENSIONS, EXTENSIONS.Count);*/
 
-		public override Span<StringView> SupportedExtensions => _extensions;
+		public override Span<StringView> SupportedExtensions => default;
 
-		public override Result<Resource> Load(StringView absolutePath, StringView originalPath, Stream fileReadStream)
+		public override Result<void> Load(StringView absolutePath, StringView originalPath, Stream fileReadStream, Mesh r_mesh)
 		{
 			tinyobj.ObjReader reader = scope .();
 
@@ -65,12 +65,8 @@ namespace SteelEngine
 				}
 			}
 
-			return new Mesh(vertices, indices);
-		}
-
-		public override bool HandlesType(Type type)
-		{
-			return type == typeof(Mesh);
+			r_mesh.SetData(vertices, indices);
+			return .Ok;
 		}
 	}
 }

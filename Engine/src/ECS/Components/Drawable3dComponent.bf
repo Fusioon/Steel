@@ -5,22 +5,22 @@ namespace SteelEngine.ECS.Components
 		public Mesh Mesh
 		{
 			get => _mesh;
-			set { _mesh.DisposeSafe(); _mesh = value..AddRef(); }
+			set { _mesh.UnrefSafe(); _mesh = value..AddRef(); }
 		}
 
 		public Material Material
 		{
 			get => _material;
-			set { _material.DisposeSafe(); _material = value..AddRef(); }
+			set { _material.UnrefSafe(); _material = value..AddRef(); }
 		}
 
-		Mesh _mesh ~ _.DisposeSafe();
-		Material _material ~ _.DisposeSafe();
+		Mesh _mesh ~ _.UnrefSafe();
+		Material _material ~ _.UnrefSafe();
 
 		public void SetMeshAndMaterial(Mesh mesh, Material mat)
 		{
-			_mesh.DisposeSafe();
-			_material.DisposeSafe();
+			_mesh.UnrefSafe();
+			_material.UnrefSafe();
 
 			_mesh = mesh..AddRef();
 			_material = mat..AddRef();

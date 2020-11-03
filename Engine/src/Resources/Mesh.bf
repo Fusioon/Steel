@@ -33,7 +33,7 @@ namespace SteelEngine
 		Result<void> Load(StringView path, bool uniqueVerticesOnly = true)
 		{
 			String tmpPath = scope .(path);
-			Resources.GlobalizePath(tmpPath);
+			ResourceManager.GlobalizePath(tmpPath);
 
 			tinyobj.ObjReader reader = scope .();
 
@@ -118,6 +118,21 @@ namespace SteelEngine
 				indexData = indices;
 			}
 			IsValid = true;
+		}
+
+		void Cleanup()
+		{
+			delete vertexData;
+			vertexData = null;
+			delete indexData;
+			indexData = null;
+		}
+
+		public void SetData(List<VertexData> vertices, List<uint16> indices)
+		{
+			Cleanup();
+			vertexData = vertices;
+			indexData = indices;
 		}
 	}
 }

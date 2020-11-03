@@ -14,23 +14,17 @@ namespace SteelEngine
 		public uint32 Width { get; protected set; }
 		public uint32 Height { get; protected set; }
 		public PixelFormat Format { get; protected set; }
-		public int MemorySize => _data?.Count ?? 0;
+		public int MemorySize => _data.Count;
 		public bool IsEmpty => (_data == null || _data.Count == 0);
 
 		public this()
 		{ 
-			
+			_data = new .[0];
 		}
 
 		public this(uint32 width, uint32 height, PixelFormat format, uint8[] data)
 		{
-			Assert!(width > 0);
-			Assert!(height > 0);
-			Assert!(data != null && !data.IsEmpty);
-			_data = data;
-			Width = width;
-			Height = height;
-			Format = format;
+			SetData(width, height, format, data);
 		}
 
 		public Color4u GetPixel(uint32 x, uint32 y)
@@ -51,5 +45,26 @@ namespace SteelEngine
 			return c;
 		}
 
+		public void SetData(uint32 width, uint32 height, PixelFormat format, uint8[] data)
+		{
+			Cleanup();
+			Assert!(width > 0 && width <= MAX_WIDTH);
+			Assert!(height > 0 && height <= MAX_HEIGHT);
+			Assert!(data != null && !data.IsEmpty);
+			_data = data;
+			Width = width;
+			Height = height;
+			Format = format;
+		}
+
+
+		void Cleanup()
+		{
+			Width = 0;
+			Height = 0;
+			Format = .Unknown;
+			delete _data;
+			_data = null;
+		}
 	}
 }

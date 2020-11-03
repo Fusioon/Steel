@@ -3,7 +3,7 @@ using System;
 namespace SteelEngine.Loaders
 {
 	[CRepr, Ordered]
-	struct BITMAPFILEHEADER
+	public struct BITMAPFILEHEADER
 	{
 		public uint16 id;
 		public uint32 size;
@@ -12,7 +12,7 @@ namespace SteelEngine.Loaders
 	}
 
 	[CRepr, Ordered]
-	struct BITMAPINFOHEADER
+	public struct BITMAPINFOHEADER
 	{
 		public uint32 header_size;
 		public int32 width;
@@ -29,7 +29,7 @@ namespace SteelEngine.Loaders
 	}
 
 	[CRepr, Ordered]
-	struct PIXELDATA
+	public struct PIXELDATA
 	{
 		public uint8 blue;
 		public uint8 green;

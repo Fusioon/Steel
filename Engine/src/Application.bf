@@ -20,6 +20,7 @@ namespace SteelEngine
 		
 		private bool _isRunning = false;
 
+		public CommandLineArgs CmdArgs { get; private set; }
 		private Window _window ~ delete _;
 		private Window.EventCallback _eventCallback = new => OnEvent ~ delete _;
 
@@ -36,14 +37,12 @@ namespace SteelEngine
 
 		public this()
 		{
-			FreeType.FT_Library lib = ?;
-			FreeType.FT_Init_FreeType(&lib);
 			
 		}
 
 		public ~this()
 		{
-			
+			delete CmdArgs;
 		}
 
 		/// <summary>
@@ -72,6 +71,7 @@ namespace SteelEngine
 			return system;
 		}
 
+		[NoDiscard]
 		public Entity CreateEntity()
 		{
 			return new Entity();
@@ -79,13 +79,14 @@ namespace SteelEngine
 
 		public void Run(String[] args, IGame game)
 		{
+			CmdArgs = new .(args);
+
 			_game = game;
 			Setup();
 			Init();
 			
 			var windowConfig = WindowConfig(1280, 720, "SteelEngine", false, true);
 			_window = new Window(windowConfig, _eventCallback);
-
 			
 			Start();
 			_isRunning = true;
@@ -103,12 +104,18 @@ namespace SteelEngine
 		protected virtual void Setup()
 		{
 			Log.AddHandle(Console.Out);
-			// @TODO(fusion) add way to set this through command line arguments or cvar
-			// C:\\Users\\user\\Documents\\Beef\\content
-			Resources.[Friend]Initialize("D:\\SteelEngine\\content", CompanyName, ProductName);
-			//Resources.[Friend]Initialize("C:\\Users\\user\\Documents\\Beef\\content", CompanyName, ProductName);
-			_gameConsole.Initialize(scope String[]("config.cfg", "res://config.cfg"));
 
+			// @TODO(fusion) add way to set this through command line arguments or cvar
+			ResourceManager.[Friend]Initialize("D:\\SteelEngine\\content", CompanyName, ProductName);
+
+			// @TODO(fusion) - find better way to add resource loaders
+			ResourceManager.AddResourceLoader<ImageLoader>();
+			ResourceManager.AddResourceLoader<MeshLoader>();
+			ResourceManager.AddResourceLoader<ShaderLoader>();
+			ResourceManager.AddResourceLoader<MaterialLoader>();
+
+			_gameConsole.[Friend]Initialize(scope String[]("config.cfg", "res://config.cfg"), CmdArgs);
+			
 			_game.Setup();
 		}
 
@@ -130,6 +137,32 @@ namespace SteelEngine
 				}
 			}
 
+			// For testing purposes only
+			/*FreeType.FT_Library lib = ?;
+			if(FreeType.FT_Init_FreeType(&lib) != 0)
+			{
+				Runtime.Assert(false);
+			}
+
+			String tmp = scope .("res://font.ttf");
+			Resources.GlobalizePath(tmp);
+			tmp.EnsureNullTerminator();
+			FreeType.FT_Face face = ?;
+			var error = FreeType.FT_New_Face( lib,
+				tmp.CStr(),
+				0,
+				&face );
+			Runtime.Assert(error == 0);
+			let size = _window.Size;
+			error = FreeType.FT_Set_Char_Size(face, 0, 16 * 64, (.)size.x, (.)size.y);
+			Runtime.Assert(error == 0);
+			let glyphIndex = FreeType.FT_Get_Char_Index( face, 65 );
+			error = FreeType.FT_Load_Glyph(face, glyphIndex, 0 );
+			Runtime.Assert(error == 0);
+			
+			FreeType.FT_Err ss = (.)FreeType.FT_Render_Glyph( face.glyph,   /* glyph slot  */
+				(uint)FreeType.FT_RENDER_MODE.FT_RENDER_MODE_MONO  ); /* render mode */*/
+			
 			_game.Start();
 		}
 

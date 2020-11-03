@@ -1,5 +1,5 @@
 FileVersion = 1
-Dependencies = {corlib = "*", glfw-beef = "*", corlib = "*", Bgfx = "*", libpng = "*", tinyobjloader = "*", FreeType = "*"}
+Dependencies = {corlib = "*", glfw-beef = "*", corlib = "*", Bgfx = "*", libpng = "*", tinyobjloader = "*"}
 
 [Project]
 Name = "SteelEngine"

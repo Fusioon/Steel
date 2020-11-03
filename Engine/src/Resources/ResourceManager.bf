@@ -4,16 +4,16 @@ using System.Collections;
 
 namespace SteelEngine
 {
-	public static class Resources
+	public static class ResourceManager
 	{
 		private static String _contentPath ~ delete _;
 		private static String _userPath ~ delete _;
 
-		static Dictionary<StringView, ResourceLoader> _resourceLoadersFileExts = new Dictionary<StringView, ResourceLoader>() ~ delete _;
-		static List<ResourceLoader> _resourceLoaders = new List<ResourceLoader>() ~ DeleteContainerAndItems!(_);
+		static Dictionary<StringView, ResourceLoaderBase> _resourceLoadersFileExts = new Dictionary<StringView, ResourceLoaderBase>() ~ delete _;
+		static List<ResourceLoaderBase> _resourceLoaders = new List<ResourceLoaderBase>() ~ DeleteContainerAndItems!(_);
 		static Dictionary<StringView, Resource> _loadedResources = new Dictionary<StringView, Resource>() ~ delete _;
 
-		static ~this()
+		public static ~this()
 		{
 			/*for(let res in _loadedResources.Values)
 			{
@@ -21,7 +21,7 @@ namespace SteelEngine
 				{
 					res.[Friend]Delete();
 				}
-			}*/
+			}
 
 			for(let res in _sharedResources.Values)
 			{
@@ -29,11 +29,14 @@ namespace SteelEngine
 				{
 					res.[Friend]Delete();
 				}
-			}	
+			}*/
 		}
 
 		static void Initialize(StringView contentPath, StringView companyName, StringView appName)
 		{
+			// To make sure we only ever call initialize once
+			Runtime.Assert(_contentPath == null);
+
 			_contentPath = new String();
 
 			if (contentPath.IsEmpty)
@@ -82,7 +85,7 @@ namespace SteelEngine
 			}
 		}
 
-		public static T AddResourceLoader<T>() where T : ResourceLoader, new, delete
+		public static T AddResourceLoader<T>() where T : ResourceLoaderBase, new, delete
 		{
 			let loader = new T();
 
@@ -92,7 +95,7 @@ namespace SteelEngine
 				{
 					String name = scope .();
 					typeof(T).GetFullName(name);
-					Log.Error("Error registering {}. Resource loader for {} files is already defined!", name, ext);
+					Log.Error("Error registering {}. Resource loader for '{}' files is already defined!", name, ext);
 				}
 			}
 			_resourceLoaders.Add(loader);
@@ -144,24 +147,34 @@ namespace SteelEngine
 			}
 
 			
-			if (res == null)
+			if (res == null || res.RefCount == 0)
 			{
-				if (_resourceLoadersFileExts.TryGetValue(ext, let loader) && loader.HandlesType(typeof(T)))
+				if(res == null)
+					res = new T();
+
+				if (_resourceLoadersFileExts.TryGetValue(ext, let genericLoader))
 				{
-					res = (T)loader.Load(path, path, fstream);
-					res.[Friend]SetPath(path);
+					let loader = genericLoader as ResourceLoader<T>;
+					if(loader != null)
+					{
+						let result = loader.Load(path, path, fstream, res);
+						switch(result)
+						{
+						case .Ok:
+							res.[Friend]SetPath(path);
+							_loadedResources[res.Path] = res;
+
+						case .Err(let err):
+							return .Err(err);
+						}
+					}
+					
 				}
 				else
 				{
 					return .Err(.FileReadError(.Unknown));
 				}
 			}
-			else if (res.RefCount == 0)
-			{
-				res.AddRef();
-			}
-
-			_loadedResources[res.Path] = res;
 
 			return .Ok(res);
 		}

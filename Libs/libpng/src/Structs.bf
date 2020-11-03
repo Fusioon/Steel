@@ -6,7 +6,6 @@ using System;
 
 namespace libpng
 {
-	
 	typealias png_uint_16 = uint16;
 	typealias png_uint_32 = uint32;
 	typealias png_byte = uint8;
@@ -129,14 +128,13 @@ namespace libpng
 	[CRepr]
 	struct png_image
 	{
-	  	public png_control* 	opaque;    /* Initialize to NULL, free with png_image_free */
-	  	public png_uint_32 		version;   /* Set to PNG_IMAGE_VERSION */
-		public png_uint_32 		width;     /* Image width in pixels (columns) */
-		public png_uint_32 		height;    /* Image height in pixels (rows) */
-		public Format 			format;    /* Image format as defined below */
-		public png_uint_32 		flags;     /* A bit mask containing informational flags */
-		public png_uint_32 		colormap_entries;
-	                           /* Number of entries in the color-map */
+	  	public png_control* 	opaque;    			/* Initialize to NULL, free with png_image_free */
+	  	public png_uint_32 		version;   			/* Set to PNG_IMAGE_VERSION */
+		public png_uint_32 		width;     			/* Image width in pixels (columns) */
+		public png_uint_32 		height;   			/* Image height in pixels (rows) */
+		public Format 			format;    			/* Image format as defined below */
+		public png_uint_32 		flags;     			/* A bit mask containing informational flags */
+		public png_uint_32 		colormap_entries;  	/* Number of entries in the color-map */
 
 	   /* In the event of an error or warning the following field will be set to a
 	    * non-zero value and the 'message' field will contain a '\0' terminated
@@ -147,8 +145,7 @@ namespace libpng
 	    * The upper 30 bits of this value are reserved, the low two bits contain
 	    * a value as follows:
 	    */
-//#  define PNG_IMAGE_WARNING 1
-//#  define PNG_IMAGE_ERROR 2
+
 	   /*
 	    * The result is a two-bit code such that a value more than 1 indicates
 	    * a failure in the API just called:
@@ -158,7 +155,6 @@ namespace libpng
 	    *    2 - error
 	    *    3 - error preceded by warning
 	    */
-//#  define PNG_IMAGE_FAILED(png_cntrl) ((((png_cntrl).warning_or_error)&0x03)>1)
 
 	   public png_uint_32  warning_or_error;
 

@@ -20,12 +20,11 @@ namespace SteelEngine.Renderer.BGFX
 		static Dictionary<Type, Bgfx.VertexLayout> _vertexLayouts = new .() ~ delete _;
 		static RIDOwner<VertexLayoutData> _layouts;
 
-
 		public static Bgfx.VertexLayout* Get(Type vertexType) => &_vertexLayouts[vertexType];
 
 		public static Result<Bgfx.VertexLayout> Create(Type vertexType)
 		{
-			if (_vertexLayouts.TryGetValue(vertexType, let layout))
+			if (_vertexLayouts.TryGetValue(vertexType, var layout))
 			{
 				return layout;
 			}
@@ -34,7 +33,6 @@ namespace SteelEngine.Renderer.BGFX
 			bool valid = true;
 			bool notEmpty = false;
 
-			Bgfx.VertexLayout layout = ?;
 			Bgfx.VertexLayoutBegin(&layout, .Noop);
 
 			for (let f in fields)

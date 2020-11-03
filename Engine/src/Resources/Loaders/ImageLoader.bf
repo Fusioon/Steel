@@ -5,15 +5,13 @@ using SteelEngine.Loaders;
 
 namespace SteelEngine
 {
-	public class ImageLoader : ResourceLoader
+	public class ImageLoader : ResourceLoader<Image>
 	{
-		StringView[] _extensions = new StringView[](".bmp", ".png") ~ delete _;
+		//static var EXTENSIONS = StringView[](".bmp", ".png");
+		public override Span<StringView> SupportedExtensions => default;
+		//public override Span<StringView> SupportedExtensions => .(&EXTENSIONS, EXTENSIONS.Count);
 
-		public override Type ResourceType => typeof(Image);
-
-		public override Span<StringView> SupportedExtensions => _extensions;
-
-		public override Result<Resource> Load(StringView absolutePath, StringView originalPath, Stream fileReadStream)
+		public override Result<void> Load(StringView absolutePath, StringView originalPath, Stream fileReadStream, Image r_image)
 		{
 			String ext = scope .();
 			if (Path.GetExtension(absolutePath, ext) case .Err)
@@ -26,26 +24,25 @@ namespace SteelEngine
 			{
 				case ".bmp":
 				{
-					if (LoadBMP(fileReadStream) case .Ok(let val))
-						return val;
+					if (LoadBMP(fileReadStream, r_image) case .Ok)
+					{
+						return .Ok; 
+					}	
 				}
 
 				case ".png":
 				{
-				if (LoadPNG(scope .(fileReadStream)) case .Ok(let val))
-					return val;
+					if (LoadPNG(scope .(fileReadStream), r_image) case .Ok)
+					{
+						return .Ok;
+					}
 				}	
 			}
 
 			return .Err;
 		}
 
-		public override bool HandlesType(System.Type type)
-		{
-			return type == typeof(Image);
-		}
-
-		public static Result<Image> LoadBMP(Stream reader)
+		public static Result<void> LoadBMP(Stream reader, Image image)
 		{
 			const uint BITMAP_SIGNATURE = 0x4d42;
 			const uint BITMAP_FILE_HEADER_SIZE = 14;
@@ -120,7 +117,8 @@ namespace SteelEngine
 					return .Err;
 			}
 
-			return new Image((uint32)info.width, (uint32)info.height, format, data);
+			image.SetData((uint32)info.width, (uint32)info.height, format, data);
+			return .Ok;
 		}
 
 
@@ -143,7 +141,7 @@ namespace SteelEngine
 			return true;
 		}
 
-		public Result<Image> LoadPNG(StreamReader reader)
+		public Result<void> LoadPNG(StreamReader reader, Image image)
 		{
 			String resul = scope String();
 			reader.ReadToEnd(resul);
@@ -176,7 +174,8 @@ namespace SteelEngine
 				return .Err;
 			}
 
-			return new Image(pngImg.width, pngImg.height, dstFormat, buffer);
+			image.SetData(pngImg.width, pngImg.height, dstFormat, buffer);
+			return .Ok;
 		}
 	}
 }

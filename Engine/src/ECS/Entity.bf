@@ -76,6 +76,11 @@ namespace SteelEngine.ECS
 			return Application.Instance.[Friend]RemoveComponent(component);
 		}
 
+		public T GetComponent<T>()
+		{
+			return default;
+		}
+
 		private static EntityId _nextId = 0;
 
 		private static EntityId GetNextId()

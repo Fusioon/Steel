@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace SteelEngine
 {
-	public abstract class Resource : IDisposable
+	public abstract class Resource : IDisposable, IHashable
 	{
 		protected String _name ~ delete _;
 		protected String _path ~ delete _;
@@ -18,8 +18,40 @@ namespace SteelEngine
 			_path.Set(path);
 		}
 
+		public bool IsLoaded { get; protected set; }
 
 		public RID ResourceId { get; private set; }
+
+		public int GetHashCode()
+		{
+			return _path.GetHashCode();
+		}
+
+
+		private void Load()
+		{
+			if(IsLoaded)
+				return;
+
+			if(OnLoad() == .Ok)
+			{
+				IsLoaded = true;
+			}
+		}
+
+		private void Unload()
+		{
+			if(!IsLoaded)
+				return;
+
+			if(OnUnload() == .Ok)
+			{
+				IsLoaded = false;
+			}
+		}
+
+		protected virtual Result<void> OnLoad() => .Ok;
+		protected virtual Result<void> OnUnload() => .Ok;
 
 #region REFCOUNT
 
@@ -27,11 +59,11 @@ namespace SteelEngine
 
 		protected this()
 		{
+			IsLoaded = false;
 		}
 
 		private ~this()
 		{
-			// maybe we can never call the destructor and load when refcount is 0
 			Assert!(_refCount == 0);
 		}
 
@@ -39,7 +71,16 @@ namespace SteelEngine
 
 		public void AddRef()
 		{
+			Assert!(_refCount >= 1);
 			Interlocked.Increment(ref _refCount);
+		}
+
+		public void Unref()
+		{
+			if (ReleaseRefNoDelete() == 0)
+			{
+				Release();
+			}
 		}
 
 		protected int ReleaseRefNoDelete()
@@ -57,15 +98,13 @@ namespace SteelEngine
 
 		protected virtual void Release()
 		{
+			Unload();
 			Delete();
 		}
 
-		public virtual void Dispose()
+		public void IDisposable.Dispose()
 		{
-			if (ReleaseRefNoDelete() == 0)
-			{
-				Release();
-			}
+			Unref();
 		}
 
 #endregion REFCOUNT
@@ -82,10 +121,10 @@ namespace SteelEngine
 
 	public static
 	{
-		public static void DisposeSafe(this Resource instance)
+		public static void UnrefSafe(this Resource instance)
 		{
 			if (instance != null)
-				instance.Dispose();
+				instance.Unref();
 		}
 	}	
 

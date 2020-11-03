@@ -38,7 +38,6 @@ namespace libpng
 
 		public const uint32 PNG_IMAGE_VERSION = 1;
 
-
 		public static mixin ImageRowStride(png_image img)
 		{
 			uint32 sampleChannelsSize = ((.)(((FormatFlags)img.format)&(FormatFlags.Color|FormatFlags.Alpha))) + 1;

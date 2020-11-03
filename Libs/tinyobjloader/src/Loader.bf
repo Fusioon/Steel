@@ -6,20 +6,20 @@ namespace tinyobj
 {
 	public struct Vector2
 	{
-		public real_t x , y;
+		public real_t x, y;
 	}
 
 
 
 	public struct Vector3
 	{
-		public real_t x , y , z;
+		public real_t x, y, z;
 	}
 
 
 	public struct Color
 	{
-		public real_t r , g , b;
+		public real_t r, g, b;
 	}
 
 	public delegate bool MaterialReaderDelegate(String matId, List<material_t> materials, Dictionary<String, int32> matDict, out String warn, out String err);
@@ -72,12 +72,13 @@ namespace tinyobj
 				i++;
 			}
 
-			if (i == start) return false;
-
-			switch (real_t.Parse(StringView(input, start, i - start)))
+			if (i != start)
 			{
-			case .Ok(let val): res = val; return true;
-			default: break;
+				switch (real_t.Parse(StringView(input, start, i - start)))
+				{
+				case .Ok(let val): res = val; return true;
+				default: break;
+				}
 			}
 
 			res = default;

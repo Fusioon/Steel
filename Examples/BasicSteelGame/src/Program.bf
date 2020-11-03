@@ -6,13 +6,6 @@ using SteelEngine.ECS;
 using SteelEngine.ECS.Systems;
 using System.Collections;
 
-public static
-{
-	[CLink]
-	public static extern Windows.IntBool IsDebuggerPresent();
-}
-
-
 namespace BasicSteelGame
 {
 	class GameImpl : IGame
@@ -22,7 +15,6 @@ namespace BasicSteelGame
 
 		public Result<void> Setup()
 		{
-			IsDebuggerPresent();
 
 			return .Ok;
 		}
@@ -59,8 +51,9 @@ namespace BasicSteelGame
 				let entity = Application.Instance.CreateEntity();
 				entity.AddComponent<TransformComponent>().Position = .(gRand.Next(-20, 20), gRand.Next(-20, 20), gRand.Next(-20, 20));
 				let draw = entity.AddComponent<Drawable3dComponent>();
-				draw.Mesh = Resources.Load<Mesh>("res://models/cube.obj")..Dispose();
-				draw.Material = Resources.Load<Material>("res://test.mat")..Dispose();
+				// For some reason creates linker errors
+				/*draw.Mesh = ResourceManager.Load<Mesh>("res://models/cube.obj");
+				draw.Material = ResourceManager.Load<Material>("res://test.mat");*/
 			}
 		}
 
@@ -84,8 +77,7 @@ namespace BasicSteelGame
 
 		protected override void Update(EntityId entityId, List<BaseComponent> components, float delta)
 		{
-			Entity entity = ?;
-			if (!Entity.EntityStore.TryGetValue(entityId, out entity) || !entity.IsEnabled)
+			if (!Entity.EntityStore.TryGetValue(entityId, let entity) || !entity.IsEnabled)
 			{
 				return;
 			}

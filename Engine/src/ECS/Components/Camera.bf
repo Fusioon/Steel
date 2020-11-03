@@ -1,7 +1,8 @@
 using System;
 using SteelEngine.Math;
+using System.Collections;
 
-namespace SteelEngine.Renderer
+namespace SteelEngine.ECS.Components
 {
 	public enum CameraProjectionMode
 	{
@@ -18,7 +19,7 @@ namespace SteelEngine.Renderer
 		Skybox = 4,
 	}
 
-	public class Camera
+	public class Camera : SteelEngine.ECS.Components.BaseComponent
 	{
 		public const float HANDEDNESS = -1;
 		Matrix44 _view;
@@ -31,6 +32,8 @@ namespace SteelEngine.Renderer
 		public Color4u clearColor = .(0,0,0, 1);
 
 		CameraProjectionMode _mode = .Perspective;
+
+		public CameraProjectionMode ProjectionMode => _mode;
 
 		float _width = 1920;
 		float _height = 1080;
@@ -65,7 +68,6 @@ namespace SteelEngine.Renderer
 				);
 			}
 		}
-		
 
 		public float FieldOfView
 		{
@@ -184,5 +186,12 @@ namespace SteelEngine.Renderer
 			let aspectRatio = height / width;
 			return 2 * Math.Atan(Math.Tan(hFov/2) * aspectRatio);
 		}
+
+
+		////
+		public static Camera MainCamera { get; private set; }
+		public static Span<Camera> Cameras => s_Cameras;
+
+		private static List<Self> s_Cameras = new List<Camera>() ~ delete _;
 	}
 }

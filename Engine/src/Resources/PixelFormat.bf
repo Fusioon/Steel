@@ -2,6 +2,8 @@ namespace SteelEngine.Renderer
 {
 	public enum PixelFormat
 	{
+		Unknown,
+
 		L8, 		//luminance
 		LA8, 		//luminance-alpha
 		R8,

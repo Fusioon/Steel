@@ -12,14 +12,14 @@ namespace SteelEngine.Window
 	{
 		// NOTE(Sheep): still missing a few flags
 		public StringView Title;
-		public int Width;
-		public int Height;
+		public uint32 Width;
+		public uint32 Height;
 		public bool Undecorated;
 		public bool Resizable;
 		public bool Maximized;
 		public bool Invisible;
 
-		public this(int width, int height, StringView title = "Steel Window",
+		public this(uint32 width, uint32 height, StringView title = "Steel Window",
 			bool undecorated = false, bool resizable = false,  bool max = false, bool inv = false)
 		{
 			this.Title = title; this.Width = width; this.Height = height;
@@ -34,12 +34,12 @@ namespace SteelEngine.Window
 		public delegate void EventCallback(Event event);
 
 		private GlfwWindow* _handle;
-		private Vector2<int> _size;
+		private Vector2<uint32> _size;
 		private bool _vSync;
 		private EventCallback _eventCallback;
 
 		public GlfwWindow* Handle { get { return _handle; } }
-		public Vector2<int> Size { get { return _size; } }
+		public Vector2<uint32> Size { get { return _size; } }
 
 		public this(WindowConfig cfg, EventCallback callback)
 		{
@@ -83,7 +83,7 @@ namespace SteelEngine.Window
 			// Resize callback
 			void sizeC(GlfwWindow* window, int width, int height)
 			{
-				_size = .(width, height);
+				_size = .((.)width, (.)height);
 				WindowResizeEvent event = scope WindowResizeEvent(width, height);
 				_eventCallback(event);
 			}	
