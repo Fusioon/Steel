@@ -1,6 +1,6 @@
 [submodule "Libs/GLFW"]
 	path = Libs/GLFW
 	url = https://github.com/MineGame159/glfw-beef.git
-[submodule "BGFX"]
-	path = Libs/BGFX
-	url = https://github.com/ExoKomodo/Bgfx-bf
+[submodule "Libs/bgfx-beef"]
+	path = Libs/bgfx-beef
+	url = https://github.com/Fusioon/bgfx-beef.git
