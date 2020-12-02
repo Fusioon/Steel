@@ -18,9 +18,9 @@ namespace SteelEngine.Input
 		static var _accumulatedAxisValues = float[AxisCode.MAX]();
 		static var _axisValues = float[AxisCode.MAX]();
 
-		static (float, float) _mousePos;			// @TODO(fusion): replace with vector2
-		static (float, float) _lastMousePos;		// @TODO(fusion): replace with vector2
-		static (float, float) _mouseDelta;			// @TODO(fusion): replace with vector2
+		static Vector2 _mousePos;
+		static Vector2 _lastMousePos;
+		static Vector2 _mouseDelta;
 		static Dictionary<GamepadId, GamepadInfo> _gamepads = new Dictionary<GamepadId, GamepadInfo>() ~ delete _;
 		static Dictionary<String, KeyCode> _keycodeActionMap = new Dictionary<String, KeyCode>() ~  DeleteDictionaryAndKeys!(_);
 
@@ -62,7 +62,7 @@ namespace SteelEngine.Input
 
 		static void UpdateMousePosition(float x, float y)
 		{
-			_mousePos = (x,y);
+			_mousePos = .(x,y);
 		}
 
 		static void GamepadConnected(GamepadId gamepadId, StringView deviceName)
@@ -110,9 +110,9 @@ namespace SteelEngine.Input
 			_axisValues = _accumulatedAxisValues;
 
 			// Update mouse
-			_mouseDelta = (_mousePos.0 - _lastMousePos.0, _mousePos.1 - _lastMousePos.1);
-			_axisValues[(int)AxisCode.MouseX] = _mouseDelta.0;
-			_axisValues[(int)AxisCode.MouseY] = _mouseDelta.1;
+			_mouseDelta = .(_mousePos.x - _lastMousePos.x, _mousePos.y - _lastMousePos.y);
+			_axisValues[(int)AxisCode.MouseX] = _mouseDelta.x;
+			_axisValues[(int)AxisCode.MouseY] = _mouseDelta.y;
 			_lastMousePos = _mousePos;
 
 			// Clear accumulators
@@ -199,7 +199,7 @@ namespace SteelEngine.Input
 			return .();
 		}
 
-		public static (float, float) MousePosition => _mousePos;
+		public static Vector2 MousePosition => _mousePos;
 		public static Dictionary<GamepadId, GamepadInfo>.KeyEnumerator ConnectedGamepads => _gamepads.Keys;
 		public static int ConnectedGamepadsCount => _gamepads.Count;
 
