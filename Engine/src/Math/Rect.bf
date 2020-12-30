@@ -8,10 +8,10 @@ namespace SteelEngine
 		public T x, y;
 		public T width, height;
 
-		public T Top => y;
-		public T Left => x;
-		public T Right => x + width;
-		public T Bottom => y + height;
+		[Inline] public T Top => y;
+		[Inline] public T Left => x;
+		[Inline] public T Right => x + width;
+		[Inline] public T Bottom => y + height;
 
 		public this()
 		{

@@ -106,12 +106,9 @@ namespace SteelEngine
 		public int GetHashCode()
 		{
 			int seed = 0;
-			Helpers.HashCombine(ref seed, x.GetHashCode());
-			Helpers.HashCombine(ref seed, y.GetHashCode());
-			Helpers.HashCombine(ref seed, z.GetHashCode());
-			Helpers.HashCombine(ref seed, w.GetHashCode());
+			Helpers.HashCombine(ref seed, data);
 			return seed;
-		}
+		} 
 	}
 
 	public extension Vector4<T> where T : operator implicit float

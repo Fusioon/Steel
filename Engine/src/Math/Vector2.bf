@@ -36,11 +36,26 @@ namespace SteelEngine
 			data = values;
 		}
 
+		// Creates a new Vector with given tuple (0 = x, 1 = y)
+		[Inline]
+		public this((T, T) v)
+		{
+			data = T[](v.0, v.1);
+		}
+
+		// Creates a new Vector with given tuple (x = x, y = y)
+		[Inline]
+		public this((T x, T y) v)
+		{
+			data = T[](v.x, v.y);
+		}
+
 		public T x
 		{
 			[Inline] get => data[0];  
 			[Inline] set mut => data[0] = value;
 		}
+
 		public T y
 		{
 			[Inline] get => data[1];
@@ -74,10 +89,10 @@ namespace SteelEngine
 		public int GetHashCode()
 		{
 			int seed = 0;
-			Helpers.HashCombine(ref seed, x.GetHashCode());
-			Helpers.HashCombine(ref seed, y.GetHashCode());
+			Helpers.HashCombine(ref seed, data);
 			return seed;
 		}
+
 	}
 
 	public extension Vector2<T> where T : operator implicit int

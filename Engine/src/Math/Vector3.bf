@@ -99,9 +99,7 @@ namespace SteelEngine
 		public int GetHashCode()
 		{
 			int seed = 0;
-			Helpers.HashCombine(ref seed, x.GetHashCode());
-			Helpers.HashCombine(ref seed, y.GetHashCode());
-			Helpers.HashCombine(ref seed, z.GetHashCode());
+			Helpers.HashCombine(ref seed, data);
 			return seed;
 		}
 	}
@@ -160,10 +158,16 @@ namespace SteelEngine
 			z += rv;
 		}
 
-		[Inline, Commutable]
+		[Inline]
 		public static Self operator+(Self lv, T rv)
 		{
 			return .(lv.x + rv, lv.y + rv, lv.z + rv);
+		}
+
+		[Inline]
+		public static Self operator+(T lv, Self rv)
+		{
+			return .(lv + rv.x, lv + rv.y, lv + rv.z);
 		}
 
 		[Inline]
@@ -194,7 +198,7 @@ namespace SteelEngine
 			z -= rv;
 		}
 
-		[Inline, Commutable]
+		[Inline]
 		public static Self operator-(Self lv, T rv)
 		{
 			return .(lv.x - rv, lv.y - rv, lv.z + rv);
@@ -222,10 +226,16 @@ namespace SteelEngine
 			z *= rv;
 		}
 
-		[Inline, Commutable]
+		[Inline]
 		public static Self operator*(Self lv, T rv)
 		{
 			return .(lv.x * rv, lv.y * rv, lv.z * rv);
+		}
+
+		[Inline]
+		public static Self operator*(T lv, Self rv)
+		{
+			return .(lv * rv.x, lv * rv.y, lv * rv.z);
 		}
 
 		[Inline]
@@ -250,7 +260,7 @@ namespace SteelEngine
 			z /= rv;
 		}
 
-		[Inline, Commutable]
+		[Inline]
 		public static Self operator/(Self lv, T rv)
 		{
 			return .(lv.x / rv, lv.y / rv, lv.y / rv);
