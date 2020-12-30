@@ -64,6 +64,9 @@ namespace SteelEngine
 
 			for (let val in _configVars.Values)
 				val.Dispose();
+
+			for(let cmd in _enqueuedCommands)
+				delete cmd;
 		}
 
 		private void Initialize(Span<String> configFiles, CommandLineArgs args)
@@ -77,7 +80,7 @@ namespace SteelEngine
 			{
 				if (LoadConfigFile(file) case .Err(let err))
 				{
-					Log.Error("Couldn't open configuration file {0} ({1})", file, err);
+					Log.Error($"Couldn't open configuration file {file} ({err})");
 				}
 			}
 
@@ -443,8 +446,8 @@ namespace SteelEngine
 			int i = 0;
 			int start = 0;
 
-			String line = new .();
-			defer delete line;
+			String line = scope .();
+			//defer delete line;
 
 			while (ConsoleLineParser.Tokenize(input, ref i, ref start, tokens, line))
 			{
@@ -461,11 +464,13 @@ namespace SteelEngine
 				tokens.CopyTo(1, args, 0, tokens.Count-1);
 				_configVars.Add(name, ConfigVarValue()
 				{
-					line = line,
+					line = new .(line),
 					args = args
 				});
-				line = new .();
+
+				line.Clear();
 			}
+			
 		}
 
 		private Result<void, FileOpenError> LoadConfigFile(StringView path)
