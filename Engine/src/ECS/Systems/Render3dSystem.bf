@@ -10,7 +10,7 @@ namespace SteelEngine.ECS.Systems
 
 		protected override void RegisterComponentTypes()
 		{
-			_registeredTypes = new Type[]{ typeof(Drawable3dComponent), typeof(TransformComponent) };
+			_registeredTypes = new Type[]( typeof(Drawable3dComponent), typeof(TransformComponent) );
 		}
 
 		protected override void Draw(uint64 entityId, List<BaseComponent> components)

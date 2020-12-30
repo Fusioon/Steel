@@ -10,7 +10,7 @@ namespace SteelEngine.ECS.Systems
 
 		protected override void RegisterComponentTypes()
 		{
-			_registeredTypes = new Type[]{ typeof(BehaviorComponent) };
+			_registeredTypes = new Type[]( typeof(BehaviorComponent) );
 		}
 
 		protected override void Update(EntityId entityId, List<BaseComponent> components, float delta)

@@ -20,6 +20,13 @@ namespace SteelEngine
 
 		public decltype(_parsedGameConsoleArgs).Enumerator GameConsoleArgs => _parsedGameConsoleArgs.GetEnumerator();
 
+		public bool TryGetValue(StringView name, out StringView val) => _parsedArgs.TryGetValue(name, out val);
+		
+		public decltype(_parsedArgs).Enumerator GetEnumerator()
+		{
+			return _parsedArgs.GetEnumerator();
+		}
+
 		private void AddArg(Span<String> args, int start, int end)
 		{
 			Assert!(start != end);
@@ -84,11 +91,6 @@ namespace SteelEngine
 			{
 				AddArg(args, lastCommandStart, i);
 			}
-		}
-
-		public decltype(_parsedArgs).Enumerator GetEnumerator()
-		{
-			return _parsedArgs.GetEnumerator();
 		}
 
 	}

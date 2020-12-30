@@ -10,7 +10,7 @@ namespace SteelEngine.ECS.Systems
 
 		protected override void RegisterComponentTypes()
 		{
-			_registeredTypes = new Type[]{ typeof(Physics2dComponent), typeof(TransformComponent) };
+			_registeredTypes = new Type[]( typeof(Physics2dComponent), typeof(TransformComponent) );
 		}
 	}
 }

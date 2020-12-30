@@ -13,11 +13,23 @@ namespace SteelEngine
 {
 	public class Application : Singleton<Application>
 	{
+		public const EPlatform Platform =
+		#if BF_PLATFORM_WINDOWS
+		 .Windows
+		#endif
+		#if BF_PLATFORM_LINUX
+		.Linux
+		#endif
+		#if BF_PLATFORM_MACOS
+		.MacOS
+		#endif
+			;
+
 		public virtual StringView CompanyName => "SteelCorp";
 		public virtual StringView ProductName => "SteelEngine";
 		public virtual Version Version => .(0, 0, 0, 1);
 		public virtual bool IsEditor => false;
-		
+
 		private bool _isRunning = false;
 
 		public CommandLineArgs CmdArgs { get; private set; }
@@ -28,6 +40,8 @@ namespace SteelEngine
 		private Dictionary<ComponentId, BaseComponent> _components ~ delete _;
 		private List<BaseComponent> _componentsToDelete ~ delete _;
 		private List<EntityId> _entitiesToRemoveFromStore ~ delete _;
+		private Dictionary<EntityId, List<ComponentId>> _entityComponents ~ delete _;
+
 		private GLFWInputManager _inputManager = new GLFWInputManager() ~ delete _;
 		private GameConsole _gameConsole = new GameConsole() ~ delete _;
 		private BgfxRenderServer _renderServer = new BgfxRenderServer() ~ delete _;
@@ -37,18 +51,22 @@ namespace SteelEngine
 
 		public this()
 		{
-			
 		}
 
 		public ~this()
 		{
 			delete CmdArgs;
+
+			for ( _entityComponents.Values)
+			{
+				delete _;
+			}
 		}
 
 		/// <summary>
-		/// Creates a new <see cref="SteelEngine.ECS.BaseSystem"/>. This operation is expensive, as it runs through all entities and registers viable ones to the new system.
-		/// Systems should be added as close to the start of the <see cref="SteelEngine.Application"/> as possible to avoid slowdowns.
-		/// </summary>
+		/// Creates a new <see cref="SteelEngine.ECS.BaseSystem"/>. This operation is expensive, as it runs through all
+		// entities and registers viable ones to the new system. Systems should be added as close to the start of the
+		// <see cref="SteelEngine.Application"/> as possible to avoid slowdowns. </summary>
 		public BaseSystem CreateSystem<T>() where T : BaseSystem
 		{
 			let system = new T();
@@ -84,10 +102,10 @@ namespace SteelEngine
 			_game = game;
 			Setup();
 			Init();
-			
+
 			var windowConfig = WindowConfig(1280, 720, "SteelEngine", false, true);
 			_window = new Window(windowConfig, _eventCallback);
-			
+
 			Start();
 			_isRunning = true;
 			while (_isRunning)
@@ -97,25 +115,35 @@ namespace SteelEngine
 				Draw();
 			}
 
-			Cleanup(); 
+			Cleanup();
 		}
 
-		
+
 		protected virtual void Setup()
 		{
 			Log.AddHandle(Console.Out);
 
-			// @TODO(fusion) add way to set this through command line arguments or cvar
-			ResourceManager.[Friend]Initialize("D:\\SteelEngine\\content", CompanyName, ProductName);
+			String projectPath = scope .();
+			if(CmdArgs.TryGetValue("project", let svProjectPath))
+			{
+				projectPath.Set(svProjectPath);
+			}
+			else
+			{
+				System.IO.Directory.GetCurrentDirectory(projectPath);
+			}
 
-			// @TODO(fusion) - find better way to add resource loaders
+			// @TODO(fusion) add way to set this through command line arguments or cvar
+			ResourceManager.[Friend]Initialize(projectPath, scope .(CompanyName), scope .(ProductName));
+
+			// @TODO(fusion) - find better way to register resource loaders
 			ResourceManager.AddResourceLoader<ImageLoader>();
 			ResourceManager.AddResourceLoader<MeshLoader>();
 			ResourceManager.AddResourceLoader<ShaderLoader>();
 			ResourceManager.AddResourceLoader<MaterialLoader>();
 
 			_gameConsole.[Friend]Initialize(scope String[]("config.cfg", "res://config.cfg"), CmdArgs);
-			
+
 			_game.Setup();
 		}
 
@@ -130,57 +158,34 @@ namespace SteelEngine
 			{
 				switch (system.[Friend]Initialize())
 				{
-					case .Ok: continue;
-					case .Err(.AlreadyInitialized): Log.Warning("Tried to initialize a system that was already initialized.");
-					case .Err(.Unknown):
-					default: Log.Fatal("Unknown error initializing a system");
+				case .Ok: continue;
+				case .Err(.AlreadyInitialized): Log.Warning("Tried to initialize a system that was already initialized.");
+				case .Err(.Unknown):
+				default: Log.Fatal("Unknown error initializing a system");
 				}
 			}
 
-			// For testing purposes only
-			/*FreeType.FT_Library lib = ?;
-			if(FreeType.FT_Init_FreeType(&lib) != 0)
-			{
-				Runtime.Assert(false);
-			}
-
-			String tmp = scope .("res://font.ttf");
-			Resources.GlobalizePath(tmp);
-			tmp.EnsureNullTerminator();
-			FreeType.FT_Face face = ?;
-			var error = FreeType.FT_New_Face( lib,
-				tmp.CStr(),
-				0,
-				&face );
-			Runtime.Assert(error == 0);
-			let size = _window.Size;
-			error = FreeType.FT_Set_Char_Size(face, 0, 16 * 64, (.)size.x, (.)size.y);
-			Runtime.Assert(error == 0);
-			let glyphIndex = FreeType.FT_Get_Char_Index( face, 65 );
-			error = FreeType.FT_Load_Glyph(face, glyphIndex, 0 );
-			Runtime.Assert(error == 0);
-			
-			FreeType.FT_Err ss = (.)FreeType.FT_Render_Glyph( face.glyph,   /* glyph slot  */
-				(uint)FreeType.FT_RENDER_MODE.FT_RENDER_MODE_MONO  ); /* render mode */*/
-			
 			_game.Start();
 		}
 
 		protected virtual void Init()
 		{
 			_components = new Dictionary<ComponentId, BaseComponent>();
+			_entityComponents = new Dictionary<uint64, List<uint64>>();
 			_componentsToDelete = new List<BaseComponent>();
 			_entitiesToRemoveFromStore = new List<EntityId>();
 
 			_systems = new List<BaseSystem>();
 			// The order of these systems will greatly affect the behavior of the engine.
 			// As functionality is added, the order of these updates should become more established.
-			// Maybe some kind of priority filtering could be added to make sure that systems execute in a defined order established at runtime.
+			// Maybe some kind of priority filtering could be added to make sure that systems execute in a defined order
+			// established at runtime.
 			CreateSystem<Physics2dSystem>();
 			CreateSystem<Physics3dSystem>();
 			CreateSystem<Render3DSystem>();
 			CreateSystem<RenderSpriteSystem>();
 			CreateSystem<RenderTextSystem>();
+			CreateSystem<CameraRenderingSystem>();
 			CreateSystem<SoundSystem>();
 			CreateSystem<BehaviorSystem>();
 
@@ -250,7 +255,6 @@ namespace SteelEngine
 				system.[Friend]Update(dt);
 				system.[Friend]PostUpdate();
 			}
-
 		}
 
 		protected virtual void Draw()
@@ -276,13 +280,23 @@ namespace SteelEngine
 				return false;
 			}
 
+			List<ComponentId> components;
+			if (!_entityComponents.TryGetValue(parent.Id, out components))
+			{
+				components = new List<uint64>();
+				_entityComponents.Add(parent.Id, components);
+			}
+			components.Add(component.Id);
+
 			for (let item in _components)
 			{
 				let entityComponent = item.value;
 				if (entityComponent.Parent != null && entityComponent.Parent.Id == component.Parent.Id)
 				{
-					// Try adding all of the entity's component. If the component is already present on a system, it will not add again.
-					// This makes sure that when doing an entity registration check, all available components are in the system. This allows the systems to dynamically register whole entities to run logic on.
+					// Try adding all of the entity's component. If the component is already present on a system, it
+					// will not add again. This makes sure that when doing an entity registration check, all available
+					// components are in the system. This allows the systems to dynamically register whole entities to
+					// run logic on.
 					for (let system in _systems)
 					{
 						system.[Friend]AddComponent(entityComponent);
@@ -295,6 +309,23 @@ namespace SteelEngine
 			}
 			_components[component.Id] = component;
 			return true;
+		}
+
+		private T GetComponent<T>(Entity entity) where T : BaseComponent
+		{
+			let components = _entityComponents.GetValueOrDefault(entity.Id);
+
+			if (components == null)
+				return null;
+
+			for ( components)
+			{
+				if (_ is T && _components.TryGetValue(_, let c))
+				{
+					return (T)c;
+				}
+			}
+			return default;
 		}
 
 		private void DeleteQueuedComponents()
@@ -311,6 +342,15 @@ namespace SteelEngine
 
 			for (let component in _componentsToDelete)
 			{
+				if (_entityComponents.TryGetValue(component.Id, let components))
+				{
+					let i = components.IndexOf(component.Id);
+					if (i != -1)
+					{
+						components.RemoveAtFast(i);
+					}
+				}
+
 				for (let system in _systems)
 				{
 					system.[Friend]RemoveComponent(component);
@@ -329,6 +369,10 @@ namespace SteelEngine
 				{
 					delete entity;
 					Entity.EntityStore.Remove(entityId);
+					if (_entityComponents.GetAndRemove(entityId) case .Ok(let val))
+					{
+						delete val.value;
+					}
 				}
 			}
 		}

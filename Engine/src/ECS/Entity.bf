@@ -61,6 +61,7 @@ namespace SteelEngine.ECS
 			return default;
 		}
 
+
 		/// <summary>
 		/// Removes an individual <see cref="SteelEngine.ECS.BaseComponent"/>.
 		/// </summary>
@@ -76,9 +77,9 @@ namespace SteelEngine.ECS
 			return Application.Instance.[Friend]RemoveComponent(component);
 		}
 
-		public T GetComponent<T>()
+		public T GetComponent<T>() where T : BaseComponent
 		{
-			return default;
+			return Application.Instance.[Friend]GetComponent<T>(this);
 		}
 
 		private static EntityId _nextId = 0;

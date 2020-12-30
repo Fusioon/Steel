@@ -91,8 +91,11 @@ namespace SteelEngine
 			var origin = Console.ForegroundColor; // Store original color
 			Console.ForegroundColor = color; // Set new color
 
-			var time = scope String()..AppendF("{}:{}:{}", DateTime.Now.Minute, DateTime.Now.Second, DateTime.Now.Millisecond); // Format current time
-			var line = scope String()..AppendF("[{}] {}: {}", time, level, message); // Format line to print
+			/*var time = scope String()..AppendF("{}:{}:{}", DateTime.Now.Minute, DateTime.Now.Second, DateTime.Now.Millisecond); // Format current time
+			var line = scope String()..AppendF("[{}] {}: {}", time, level, message); // Format line to print*/
+
+			let dt =  DateTime.Now;
+			var line = scope $"[{dt.Hour}:{dt.Minute}:{dt.Second}:{dt.Millisecond}] {level}: {message}";
 
 			// Print the line to all handles
 			for (var handle in _handles)
