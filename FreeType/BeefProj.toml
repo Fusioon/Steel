@@ -1,9 +1,0 @@
-FileVersion = 1
-
-[Project]
-Name = "FreeType"
-TargetType = "BeefLib"
-StartupObject = "FreeType.Program"
-
-[Configs.Debug.Win64]
-LibPaths = ["$(ProjectDir)/dist/x64/freetyped.lib"]
