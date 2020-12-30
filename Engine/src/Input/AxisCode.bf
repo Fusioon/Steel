@@ -13,8 +13,6 @@ namespace SteelEngine.Input
 		RightStickY,
 		LeftTrigger,
 		RightTrigger,
-
-		MAX
 	}
 
 }

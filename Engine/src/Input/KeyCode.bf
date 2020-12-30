@@ -176,7 +176,5 @@ namespace SteelEngine.Input
 		GamepadRightBumper,
 		GamepadLeftStick,
 		GamepadRightStick,
-
-		MAX
 	}	
 }

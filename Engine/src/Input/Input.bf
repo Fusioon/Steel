@@ -13,14 +13,19 @@ namespace SteelEngine.Input
 	{
 		public struct GamepadId : int32 { }
 
-		static var _accumulatedEvents = KeyEvent[KeyCode.MAX]();
-		static var _lastUpdateState = KeyState[KeyCode.MAX]();
-		static var _accumulatedAxisValues = float[AxisCode.MAX]();
-		static var _axisValues = float[AxisCode.MAX]();
+		const let KEY_COUNT = typeof(KeyCode).MaxValue+1;
+		const let AXES_COUNT = typeof(AxisCode).MaxValue+1;
+
+		static var _accumulatedEvents = KeyEvent[KEY_COUNT]();
+		static var _lastUpdateState = KeyState[KEY_COUNT]();
+		static var _accumulatedAxisValues = float[AXES_COUNT]();
+		static var _axisValues = float[AXES_COUNT]();
 
 		static Vector2 _mousePos;
 		static Vector2 _lastMousePos;
 		static Vector2 _mouseDelta;
+		static bool _ignoreLastMouseMove;
+
 		static Dictionary<GamepadId, GamepadInfo> _gamepads = new Dictionary<GamepadId, GamepadInfo>() ~ delete _;
 		static Dictionary<String, KeyCode> _keycodeActionMap = new Dictionary<String, KeyCode>() ~  DeleteDictionaryAndKeys!(_);
 
@@ -63,6 +68,12 @@ namespace SteelEngine.Input
 		static void UpdateMousePosition(float x, float y)
 		{
 			_mousePos = .(x,y);
+			// Hack to prevent weird behavior on sudden cursor position changes (eg. changing CursorState)
+			if(_ignoreLastMouseMove)
+			{
+				_ignoreLastMouseMove = false;
+				_lastMousePos = _mousePos;
+			}
 		}
 
 		static void GamepadConnected(GamepadId gamepadId, StringView deviceName)
@@ -275,6 +286,7 @@ namespace SteelEngine.Input
 				case .Confined:
 					mode = .Disabled;
 					rawInput = true;
+					_ignoreLastMouseMove = true;
 				case .Captured:
 					mode = .Disabled;
 			}
@@ -290,6 +302,7 @@ namespace SteelEngine.Input
 					glfw_beef.Glfw.SetInputMode(Application.Instance.MainWindow.Handle, .RawMouseMotion, glfw_beef.Glfw.FALSE);
 				}	
 			}
+			
 			
 
 			glfw_beef.Glfw.SetInputMode(Application.Instance.MainWindow.Handle, .Cursor, mode);
