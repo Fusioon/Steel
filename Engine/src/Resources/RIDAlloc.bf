@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.Threading;
 using System.Collections;
 
@@ -174,7 +174,7 @@ namespace SteelEngine
 			if (idx >= _maxAlloc) {
 				String name = scope .();
 				typeof(Self).GetName(name);
-				Log.Fatal("Calculated index was outside of bounds. {}::Free(RID {})", name, rid);
+				Log.Fatal($"Calculated index was outside of bounds. {name}::Free(RID {rid})");
 				return;
 			}
 
@@ -185,7 +185,7 @@ namespace SteelEngine
 			if (_validatorChunks[idxChunk][idxElement] != validator) {
 				String name = scope .();
 				typeof(Self).GetName(name);
-				Log.Fatal("Validation failed. {}::Free(RID {})", name, rid);
+				Log.Fatal($"Validation failed. {name}::Free(RID {rid})");
 				return;
 			}
 
@@ -236,7 +236,11 @@ namespace SteelEngine
 		[Inline]
 		public void Free(RID rid) => _alloc.Free(rid);
 		[Inline]
+		public void Free(Resource res) => _alloc.Free(res.ResourceId);
+		[Inline]
 		public bool Owns(RID rid) => _alloc.Owns(rid);
+		[Inline]
+		public bool Owns(Resource res) => _alloc.Owns(res.ResourceId);
 
 		public this(uint targetChunkByteSize = 4096)
 		{
@@ -244,3 +248,4 @@ namespace SteelEngine
 		}
 	}
 }
+*/

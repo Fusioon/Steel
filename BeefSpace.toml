@@ -1,5 +1,5 @@
 FileVersion = 1
-Projects = {SteelEngine = {Path = "Engine"}, SteelEditor = {Path = "Editor"}, glfw-beef = {Path = "Libs/GLFW"}, BasicSteelGame = {Path = "Examples/BasicSteelGame"}, Bgfx = {Path = "Libs/BGFX"}, libpng = {Path = "Libs/libpng"}, tinyobjloader = {Path = "Libs/tinyobjloader"}, Launcher = {Path = "Launcher"}, FreeType = {Path = "FreeType"}}
+Projects = {SteelEngine = {Path = "Engine"}, glfw-beef = {Path = "Libs/GLFW"}, BasicSteelGame = {Path = "Examples/BasicSteelGame"}, libpng = {Path = "Libs/libpng"}, tinyobjloader = {Path = "Libs/tinyobjloader"}, bgfx-beef = {Path = "Libs/bgfx-beef"}}
 
 [Workspace]
-StartupProject = "Launcher"
+StartupProject = "BasicSteelGame"

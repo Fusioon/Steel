@@ -1,13 +1,14 @@
 using System;
 using System.IO;
 
-namespace SteelEngine
+using SteelEngine.Renderer;
+
+namespace SteelEngine.Resources.Loaders
 {
 	class ShaderLoader : ResourceLoader<Shader>
 	{
-		/*static var EXTENSIONS = StringView[](".shader");
-		public override Span<StringView> SupportedExtensions => .(&EXTENSIONS, EXTENSIONS.Count);*/
-		public override Span<StringView> SupportedExtensions => default;
+		static var EXTENSIONS = StringView[](".shader");
+		public override Span<StringView> SupportedExtensions => .(&EXTENSIONS, EXTENSIONS.Count);
 
 		public override Result<void> Load(StringView absolutePath, StringView originalPath, Stream fileReadStream, Shader r_shader)
 		{

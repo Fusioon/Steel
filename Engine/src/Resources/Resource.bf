@@ -20,13 +20,12 @@ namespace SteelEngine
 
 		public bool IsLoaded { get; protected set; }
 
-		public RID ResourceId { get; private set; }
+		//public virtual RID ResourceId { get; protected set; }
 
 		public int GetHashCode()
 		{
 			return _path.GetHashCode();
 		}
-
 
 		private void Load()
 		{
@@ -36,6 +35,7 @@ namespace SteelEngine
 			if(OnLoad() == .Ok)
 			{
 				IsLoaded = true;
+				ResourceManager.[Friend]ResourceEventLoad(this);
 			}
 		}
 
@@ -47,6 +47,7 @@ namespace SteelEngine
 			if(OnUnload() == .Ok)
 			{
 				IsLoaded = false;
+				ResourceManager.[Friend]ResourceEventUnload(this);
 			}
 		}
 
@@ -111,13 +112,14 @@ namespace SteelEngine
 
 	}
 
-	public class SharedResource : Resource
+	// Even tho i made this class i still don't know what is the purpose
+	/*public class SharedResource : Resource
 	{
 		/*public this(Resource from)
 		{
 
 		}*/
-	}
+	}*/
 
 	public static
 	{

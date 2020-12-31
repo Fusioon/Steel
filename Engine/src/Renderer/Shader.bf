@@ -1,7 +1,7 @@
 using System;
-using SteelEngine.Renderer;
+using SteelEngine;
 
-namespace SteelEngine
+namespace SteelEngine.Renderer
 {
 	public class Shader : Resource
 	{
@@ -9,6 +9,9 @@ namespace SteelEngine
 		String _fragShaderCode ~ delete _;
 		public StringView VertexShaderCode => _vertShaderCode;
 		public StringView FragmentShaderCode => _fragShaderCode;
+
+		ShaderType _shaderType = .Unknown;
+		public ShaderType Type => _shaderType; 
 
 		protected override Result<void> OnUnload()
 		{

@@ -6,6 +6,19 @@ namespace SteelEngine.Renderer
 		Image _img ~ _.UnrefSafe();
 		public Image Image => _img;
 
+		/*public override RID ResourceId
+		{
+			get
+			{
+				return _img.ResourceId;
+			}
+
+			protected set
+			{
+				_img.ResourceId = value;
+			}
+		}*/
+
 		public override Span<uint8> Data => _img.Data;
 
 		public this(Image img)

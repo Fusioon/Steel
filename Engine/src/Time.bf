@@ -19,7 +19,8 @@ namespace SteelEngine
 
 		protected static float Update()
 		{
-			float dt = s_stopwatch.ElapsedMicroseconds / 1000000.0f;
+			const let US_MULTIPLIER = 1 / 1000000.0f;
+			float dt = s_stopwatch.ElapsedMicroseconds * US_MULTIPLIER;
 			s_stopwatch.Restart();
 
 			DeltaTime = dt * TimeScale;

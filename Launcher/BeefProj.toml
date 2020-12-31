@@ -4,3 +4,10 @@ Dependencies = {corlib = "*", BasicSteelGame = "*"}
 [Project]
 Name = "Launcher"
 StartupObject = "Launcher.Program"
+
+[[Project.DistinctOptions]]
+Filter = "*"
+AllocStackTraceDepth = 2
+
+[Configs.Debug.Win64]
+DebugCommandArguments = "-project D:\\SteelEngine\\content"

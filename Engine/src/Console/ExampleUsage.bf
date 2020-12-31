@@ -9,7 +9,7 @@ namespace SteelEngine.Console
 			GameConsole c = scope .();
 
 			//let configFiles = scope String[]("config.cfg");
-			c.Initialize(scope String[]("config.cfg"));
+			c.[Friend]Initialize(scope String[]("config.cfg"), null);
 
 			int32 width, height;
 			width = height = 0;

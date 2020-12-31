@@ -7,19 +7,16 @@ namespace SteelEngine.ECS.Components
 {
 	class FreecamBehavior : BehaviorComponent
 	{
-		Camera _cam;
-
 		Vector3 _position = .(0, 0, 15);
-		Vector3 _rotation = .Zero;
-		
+		Vector3 _currentRotation = .(-0.12f, 4.93f, 0);
+		Vector3 _targetRotation = .(-0.12f, 4.93f, 0);
+
+		float[2] _smoothVelocity;
+
+		float _smoothTime = 0.05f;
+
 		protected override void Update(float delta)
 		{
-			if(_cam == null)
-			{
-				_cam = Parent.GetComponent<Camera>();
-				return;
-			}
-
 			const float mouseSens = 0.3f;
 			const float speed = 5;
 			const float fastSpeed = 10;
@@ -34,11 +31,14 @@ namespace SteelEngine.ECS.Components
 			let mouseX = SteelEngine.Math.Deg2Rad!(Input.GetAxis(.MouseX));
 			let mouseY = SteelEngine.Math.Deg2Rad!(Input.GetAxis(.MouseY));
 
-			_rotation.x += mouseY * mouseSens;
-			_rotation.y += mouseX * mouseSens;
-			_rotation.x = Math.Clamp(_rotation.x, Deg2Rad!(-89.9f), Deg2Rad!(89.9f));
+			_targetRotation.x += mouseY * mouseSens;
+			_targetRotation.y += mouseX * mouseSens;
+			_targetRotation.x = Math.Clamp(_targetRotation.x, Deg2Rad!(-89.5f), Deg2Rad!(89.5f));
 
-			let quat = Quaternion.FromEulerAngles(_rotation);
+			_currentRotation.x = Math.SmoothDamp(_currentRotation.x, _targetRotation.x, ref _smoothVelocity[0], _smoothTime, float.MaxValue, Time.DeltaTime);
+			_currentRotation.y = Math.SmoothDamp(_currentRotation.y, _targetRotation.y, ref _smoothVelocity[1], _smoothTime, float.MaxValue, Time.DeltaTime);
+
+			let quat = Quaternion.FromEulerAngles(_currentRotation);
 			_position += dir * quat.ToMatrix44();
 
 			if (Input.GetKey(.Space))
@@ -46,7 +46,7 @@ namespace SteelEngine.ECS.Components
 			if (Input.GetKey(.LeftControl))
 				_position.y -= speedDt;
 
-			_cam.SetPositionRotation(_position, quat);
+			Parent.GetComponent<Camera3D>().SetPositionRotation(_position, quat);
 		}
 	}
 }

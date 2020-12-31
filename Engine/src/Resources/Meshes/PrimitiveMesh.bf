@@ -1,6 +1,6 @@
 using System;
 
-namespace SteelEngine
+namespace SteelEngine.Renderer
 {
 	class PrimitiveMesh : Mesh
 	{

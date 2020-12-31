@@ -1,5 +1,17 @@
 FileVersion = 1
-Dependencies = {corlib = "*", glfw-beef = "*", corlib = "*", Bgfx = "*", libpng = "*", tinyobjloader = "*"}
+Dependencies = {corlib = "*", glfw-beef = "*", corlib = "*", libpng = "*", tinyobjloader = "*", bgfx-beef = "*"}
 
 [Project]
 Name = "SteelEngine"
+
+[Configs.Debug.Win64]
+PreprocessorMacros = ["DEBUG", "RENDERER_BGFX"]
+
+[Configs.Release.Win64]
+PreprocessorMacros = ["RENDERER_BGFX"]
+
+[Configs.Paranoid.Win64]
+PreprocessorMacros = ["DEBUG", "PARANOID", "RENDERER_BGFX"]
+
+[Configs.Test.Win64]
+PreprocessorMacros = ["RENDERER_BGFX"]

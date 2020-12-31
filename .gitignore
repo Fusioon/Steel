@@ -1,5 +1,7 @@
 # Directories
 build/
+.vs/
+recovery/
 
 # Files
 BeefSpace_User.toml

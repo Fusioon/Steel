@@ -14,17 +14,21 @@ namespace SteelEngine
 		public uint32 Width { get; protected set; }
 		public uint32 Height { get; protected set; }
 		public PixelFormat Format { get; protected set; }
-		public int MemorySize => _data.Count;
-		public bool IsEmpty => (_data == null || _data.Count == 0);
+		public int MemorySize => _data?.Count ?? 0;
+		public bool IsEmpty => MemorySize != 0;
 
 		public this()
 		{ 
-			_data = new .[0];
+			
 		}
 
 		public this(uint32 width, uint32 height, PixelFormat format, uint8[] data)
 		{
 			SetData(width, height, format, data);
+		}
+
+		public ~this()
+		{
 		}
 
 		public Color4u GetPixel(uint32 x, uint32 y)

@@ -2,16 +2,14 @@ using System;
 using System.IO;
 using System.Collections;
 
+using SteelEngine.Renderer;
 
-namespace SteelEngine
+namespace SteelEngine.Resources.Loaders
 {
 	public class MeshLoader : ResourceLoader<Mesh>
 	{
-		/*static var EXTENSIONS = StringView[](".obj");
-
-		public override Span<StringView> SupportedExtensions => .(&EXTENSIONS, EXTENSIONS.Count);*/
-
-		public override Span<StringView> SupportedExtensions => default;
+		static let EXTENSIONS = new StringView[](".obj") ~ delete _;
+		public override Span<StringView> SupportedExtensions => EXTENSIONS;
 
 		public override Result<void> Load(StringView absolutePath, StringView originalPath, Stream fileReadStream, Mesh r_mesh)
 		{

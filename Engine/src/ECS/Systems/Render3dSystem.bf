@@ -10,16 +10,16 @@ namespace SteelEngine.ECS.Systems
 
 		protected override void RegisterComponentTypes()
 		{
-			_registeredTypes = new Type[]( typeof(Drawable3dComponent), typeof(TransformComponent) );
+			_registeredTypes = new Type[]( typeof(Drawable3dComponent), typeof(Transform3D) );
 		}
 
 		protected override void Draw(uint64 entityId, List<BaseComponent> components)
 		{
-			TransformComponent transform = null;
+			Transform3D transform = null;
 			Drawable3dComponent draw3d = null;
 			for(let c in components)
 			{
-				if(c is TransformComponent)
+				if(c is Transform3D)
 					transform = (.)c;
 				if(c is Drawable3dComponent)
 					draw3d = (.)c;
@@ -27,7 +27,7 @@ namespace SteelEngine.ECS.Systems
 
 			if (transform != null && draw3d != null)
 			{
-				draw3d.Draw(transform.matrix);
+				draw3d.Draw(.Transform(transform.position, transform.rotation, transform.scale));
 			}
 		}
 	}

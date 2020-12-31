@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using SteelEngine.Math;
 
-namespace SteelEngine
+namespace SteelEngine.Renderer
 {
 	struct VertexData : IHashable
 	{
@@ -23,11 +23,12 @@ namespace SteelEngine
 
 	class Mesh : Resource
 	{
-		/*RID _rid;
-		public override RID ResourceId => _rid;*/
+		List<VertexData> _vertexData ~ delete _;
+		List<uint16> _indexData ~ delete _;
 
-		public List<VertexData> vertexData ~ delete _;
-		public List<uint16> indexData ~ delete _;
+		public Span<VertexData> VertexData => _vertexData;
+		public Span<uint16> IndexData => _indexData;
+
 		public bool IsValid { get; private set; }
 
 		Result<void> Load(StringView path, bool uniqueVerticesOnly = true)
@@ -94,8 +95,8 @@ namespace SteelEngine
 				}
 			}
 
-			vertexData = vertices;
-			indexData = indices;
+			_vertexData = vertices;
+			_indexData = indices;
 			IsValid = true;
 			return .Ok;
 		}
@@ -109,30 +110,43 @@ namespace SteelEngine
 		{
 			if (copyData)
 			{
-				vertexData = new List<VertexData>(vertices.GetEnumerator());
-				indexData = new List<uint16>(indices.GetEnumerator());
+				_vertexData = new .()..AddRange(vertices.GetEnumerator());
+				_indexData = new .()..AddRange(indices.GetEnumerator());
 			}
 			else
 			{
-				vertexData = vertices;
-				indexData = indices;
+				_vertexData = vertices;
+				_indexData = indices;
 			}
+			IsValid = true;
+		}
+
+		public this(Span<VertexData> vertices, Span<uint16> indices)
+		{
+			_vertexData = new .(vertices.Length)..AddRange(vertices);
+			_indexData = new .(indices.Length)..AddRange(indices);
 			IsValid = true;
 		}
 
 		void Cleanup()
 		{
-			delete vertexData;
-			vertexData = null;
-			delete indexData;
-			indexData = null;
+			delete _vertexData;
+			_vertexData = null;
+			delete _indexData;
+			_indexData = null;
 		}
 
 		public void SetData(List<VertexData> vertices, List<uint16> indices)
 		{
 			Cleanup();
-			vertexData = vertices;
-			indexData = indices;
+			_vertexData = vertices;
+			_indexData = indices;
+		}
+
+		[Inline]
+		static Vector3 GetVertexNormalFlatShaded(Vector3 v, Vector3 v1, Vector3 v2)
+		{
+			return Vector3.CrossProduct(v1 - v, v2 - v);
 		}
 	}
 }

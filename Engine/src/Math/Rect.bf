@@ -16,6 +16,14 @@ namespace SteelEngine
 		public this()
 		{
 			this = default;
+		}
+
+		public this(T _x, T _y, T _width, T _height)
+		{
+			x = _x;
+			y = _y;
+			width = _width;
+			height = _height;
 		}	
 	}
 }

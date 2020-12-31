@@ -3,5 +3,7 @@ Dependencies = {corlib = "*", SteelEngine = "*"}
 
 [Project]
 Name = "BasicSteelGame"
-TargetType = "BeefLib"
 StartupObject = "BasicSteelGame.Program"
+
+[Configs.Debug.Win64]
+DebugCommandArguments = "-project D:\\SteelEngine\\content\\"

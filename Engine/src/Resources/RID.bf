@@ -17,10 +17,7 @@ namespace SteelEngine
 			_id = NULL;
 		}
 
-		public override void ToString(System.String strBuffer)
-		{
-			_id.ToString(strBuffer);
-		}
+		public override void ToString(String strBuffer) => _id.ToString(strBuffer);
 
 		[Inline]
 		public int GetHashCode() => _id.GetHashCode();
@@ -31,5 +28,6 @@ namespace SteelEngine
 		public static bool operator <=(Self lv, Self rv) => lv._id <= rv._id;
 		public static bool operator >(Self lv, Self rv) => lv._id > rv._id;
 		public static bool operator >=(Self lv, Self rv) => lv._id >= rv._id;
+		public static int operator <=>(Self lv, Self rv) => lv._id <=> rv._id;
 	}
 }

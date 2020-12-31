@@ -1,6 +1,7 @@
 using System;
 using SteelEngine.Math;
 using System.Collections;
+using SteelEngine.Renderer;
 
 namespace SteelEngine.ECS.Components
 {
@@ -16,10 +17,10 @@ namespace SteelEngine.ECS.Components
 		Color = 1,
 		Depth = 2,
 		DepthAndColor = .Color | .Depth,
-		Skybox = 4,
+		Skybox = 4
 	}
 
-	public class Camera : SteelEngine.ECS.Components.BaseComponent
+	public class Camera3D : BaseComponent
 	{
 		public const float HANDEDNESS = -1;
 		Matrix44 _view;
@@ -29,7 +30,7 @@ namespace SteelEngine.ECS.Components
 		public Matrix44 View => _view;
 
 		public CameraClearFlags clearFlags = .DepthAndColor;
-		public Color4u clearColor = .(0,0,0, 1);
+		public Color4u clearColor = .(0,0,0, 0xFF);
 
 		CameraProjectionMode _mode = .Perspective;
 
@@ -43,30 +44,16 @@ namespace SteelEngine.ECS.Components
 		float _fovy = 59;
 		float _size = 5;
 
+		public this()
+		{
+			_fovy = VerticalFov(Deg2Rad!(_fovy), _width, _height);
+			UpdateProjectionMatrix();
+			_view = Matrix44.Transform(.Zero, .Identity, .One).Inverse;
+		}
+
 		public void SetPositionRotation(Vector3 position, Quaternion rotation)
 		{
 			_view = Matrix44.Transform(position, rotation, .One).Inverse;
-		}
-
-		public Vector3 Position
-		{
-			[Inline] get => _view.columns[3].xyz;
-			[Inline] set mut => _view.columns[3] = .(value, 1);
-		}
-
-		public Quaternion Rotation
-		{
-			[Inline] get => .FromMatrix(_view.RotationMatrix);
-			[Inline] set mut
-			{
-				let rot = value.ToMatrix();
-				_view = .(
-					.(rot.columns[0], _view.columns[0].w),
-					.(rot.columns[1], _view.columns[1].w),
-					.(rot.columns[2], _view.columns[2].w),
-					_view.columns[3]
-				);
-			}
 		}
 
 		public float FieldOfView
@@ -159,7 +146,6 @@ namespace SteelEngine.ECS.Components
 				_projection = Matrix44.Ortho(-_size, _size, _size, -_size, _znear, _zfar, HANDEDNESS);
 			}
 
-			//_projection[5] *= -1;
 		}
 
 		public static float DiagonalToVerticalFov(float dFov, float width, float height)
@@ -171,6 +157,7 @@ namespace SteelEngine.ECS.Components
 			return vFov * (width / height);
 		}
 
+		// Converts vertical FOV value to matching horizontal FOV value
 		public static float VerticalFov(float hFov, float width, float height)
 		{
 			let aspectRatio =  height / width;
@@ -181,6 +168,8 @@ namespace SteelEngine.ECS.Components
 			return float(2.0d * atan);
 			//return real_t(2.0d *  Math.Atan(Math.Tan(hFov/2) * aspectRatio));
 		}
+
+		// Converts horizontal FOV value to matching vertical FOV value
 		public static float HorizontalFov(float hFov, float width, float height)
 		{
 			let aspectRatio = height / width;
@@ -188,10 +177,9 @@ namespace SteelEngine.ECS.Components
 		}
 
 
-		////
-		public static Camera MainCamera { get; private set; }
-		public static Span<Camera> Cameras => s_Cameras;
+		public static Camera3D MainCamera { get; private set; }
+		public static Span<Camera3D> Cameras => s_Cameras;
 
-		private static List<Self> s_Cameras = new List<Camera>() ~ delete _;
+		private static List<Self> s_Cameras = new List<Camera3D>() ~ delete _;
 	}
 }

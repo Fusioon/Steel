@@ -1,19 +1,22 @@
 using System;
+using Bgfx;
+
 namespace SteelEngine.Renderer.BGFX
 {
-	/*class BgfxTexture : Texture2D
+	class BgfxImageTexture : ImageTexture
 	{
+		protected bgfx.TextureHandle _textureHandle;
 
-		uint _memoryUsage = 0;
-		//public override uint MemoryUsage => _memoryUsage;
+		public virtual  bgfx.TextureHandle TextureHandle => _textureHandle;
 
-		protected Bgfx.TextureHandle _textureHandle;
-
-		public this(uint32 width, uint32 height)
+		public this(Image img) : base(img)
 		{
-			_width = width;
-			_height = height;
-			_textureHandle = Bgfx.CreateTexture2d((uint16)_width, (uint16)_height, false, 1, .RGBA8, .None, null);
+		}
+
+		public Result<void> Initialize()
+		{
+			_textureHandle = bgfx.create_texture_2d((uint16)_width, (uint16)_height, false, 1, .RGBA8, 0, null);
+			return _textureHandle.Valid ? .Ok : .Err;
 		}
 
 		/*protected override void Delete()
@@ -78,5 +81,6 @@ namespace SteelEngine.Renderer.BGFX
 		{
 
 		}*/
-	}*/
+		
+	}
 }

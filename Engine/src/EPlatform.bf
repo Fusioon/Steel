@@ -2,8 +2,7 @@ namespace SteelEngine
 {
 	enum EPlatform
 	{
-		Unknown = default,
-		Windows,
+		Windows = 1,
 		Linux,
 		MacOS,
 		Android,

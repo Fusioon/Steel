@@ -10,7 +10,7 @@ namespace SteelEngine.ECS.Systems
 
 		protected override void RegisterComponentTypes()
 		{
-			_registeredTypes = new Type[]( typeof(SoundComponent), typeof(TransformComponent) );
+			_registeredTypes = new Type[]( typeof(SoundComponent), typeof(Transform3D) );
 		}
 	}
 }

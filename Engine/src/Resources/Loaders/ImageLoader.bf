@@ -3,13 +3,12 @@ using System.IO;
 using SteelEngine.Renderer;
 using SteelEngine.Loaders;
 
-namespace SteelEngine
+namespace SteelEngine.Resources.Loaders
 {
 	public class ImageLoader : ResourceLoader<Image>
 	{
-		//static var EXTENSIONS = StringView[](".bmp", ".png");
-		public override Span<StringView> SupportedExtensions => default;
-		//public override Span<StringView> SupportedExtensions => .(&EXTENSIONS, EXTENSIONS.Count);
+		static let EXTENSIONS = new StringView[](".bmp", ".png", ".tga") ~ delete _;
+		public override Span<StringView> SupportedExtensions => EXTENSIONS;
 
 		public override Result<void> Load(StringView absolutePath, StringView originalPath, Stream fileReadStream, Image r_image)
 		{
@@ -22,21 +21,29 @@ namespace SteelEngine
 
 			switch (ext)
 			{
-				case ".bmp":
+			case ".bmp":
 				{
 					if (LoadBMP(fileReadStream, r_image) case .Ok)
 					{
-						return .Ok; 
-					}	
+						return .Ok;
+					}
 				}
 
-				case ".png":
+			case ".png":
 				{
 					if (LoadPNG(scope .(fileReadStream), r_image) case .Ok)
 					{
 						return .Ok;
 					}
-				}	
+				}
+
+			case ".tga":
+				{
+					if (LoadTGA(fileReadStream, r_image) case .Ok)
+					{
+						return .Ok;
+					}
+				}
 			}
 
 			return .Err;
@@ -62,16 +69,17 @@ namespace SteelEngine
 			uint8[] data = new .[info.width * Math.Abs(info.height) * readSize];
 
 			var column = info.width;
-			var row = info.height > 0 ? info.height - 1 : 0;	// if image is saved as top to bottom height should be negative value
+			var row = info.height > 0 ? info.height - 1 : 0;// if image is saved as top to bottom height should be
+			// negative 	value
 
 			let rowBytesToSkip = (info.width * info.bits % 32) / 8;
 
-			while(reader.Read<uint32>() case .Ok(let color))
+			while (reader.Read<uint32>() case .Ok(let color))
 			{
 				let offset = (info.width * row * readSize) + --column * readSize;
 
 				switch (info.bits) {
-					case 32:
+				case 32:
 					{
 						data[offset + 2] = (uint8)(color & 0xff);
 						data[offset + 1] = (uint8)((color >> 8) & 0xff);
@@ -79,42 +87,43 @@ namespace SteelEngine
 						data[offset + 3] = (uint8)(color >> 24);
 					}
 
-					case 24:
+				case 24:
 					{
 						data[offset + 2] = (uint8)(color & 0xff);
 						data[offset + 1] = (uint8)((color >> 8) & 0xff);
 						data[offset + 0] = (uint8)((color >> 16) & 0xff);
 					}
 
-					case 8, 4, 1: break;	// @TODO(fusion) - implement
+				case 8,4,1: break;// @TODO(fusion) - implement
 				}
 
 				reader.Seek(rowBytesToSkip, .Relative);
-				if (column == 0) {
+				if (column == 0)
+				{
 					column = info.width;
-					if (info.height > 0)	row--;
+					if (info.height > 0) row--;
 					else row++;
 				}
 			}
 
 			PixelFormat format;
 			switch (info.bits) {
-				case 32:
-					format = .RGBA8;
-				case 24:
-					format = .RGB8;
+			case 32:
+				format = .RGBA8;
+			case 24:
+				format = .RGB8;
 
-				case 8: fallthrough;
-				case 4: fallthrough;
-				case 1:
+			case 8: fallthrough;
+			case 4: fallthrough;
+			case 1:
 				{
 					Log.Error("BMPImageLoader - Unsupported image format!");
 					return .Err;
 				}
 
-				default:
-					Assert!(false, "Failed to retrieve image format");
-					return .Err;
+			default:
+				Assert!(false, "Failed to retrieve image format");
+				return .Err;
 			}
 
 			image.SetData((uint32)info.width, (uint32)info.height, format, data);
@@ -128,15 +137,15 @@ namespace SteelEngine
 			const int32 PNG_IMAGE_ERROR = 2;
 
 			let result = ((img.warning_or_error & 0x03));
-			if(result == PNG_IMAGE_ERROR)
+			if (result == PNG_IMAGE_ERROR)
 			{
-				Log.Error("Error while loading PNG image!\n{0}", img.message);
+				Log.Error($"Error while loading PNG image!\n{img.message}");
 				return false;
 			}
 
-			if(result == PNG_IMAGE_WARNING)
+			if (result == PNG_IMAGE_WARNING)
 			{
-				Log.Warning("Warning while loading PNG image!\n{0}", img.message);
+				Log.Warning($"Warning while loading PNG image!\n{img.message}");
 			}
 			return true;
 		}
@@ -152,7 +161,7 @@ namespace SteelEngine
 			uint fsize = (.)resul.Length;
 			int32 success = libpng.png_image_begin_read_from_memory(&pngImg, fileData, fsize);
 			PixelFormat dstFormat = ?;
-			switch(pngImg.format)
+			switch (pngImg.format)
 			{
 			case .Gray: dstFormat = .L8;
 			case .GA: dstFormat = .LA8;
@@ -177,5 +186,40 @@ namespace SteelEngine
 			image.SetData(pngImg.width, pngImg.height, dstFormat, buffer);
 			return .Ok;
 		}
+
+		public static Result<void> LoadTGA(Stream reader, Image image)
+		{
+			TGAHeader header = .FromStream(reader);
+			defer header.Dispose();
+			// Invalid image size
+			if (header.width == 0 || header.height == 0)
+				return .Err;
+
+			// Skip ID string (idLength bytes)
+			if (header.idLength > 0)
+			{
+				header.imageId = new String();
+				uint8 i = header.idLength;
+				while (i-- != 0)
+				{
+					char8 chr = reader.Read<char8>();
+					header.imageId.Append(chr);
+				}
+			}
+
+			let hasAlpha = (header.bitsPerPixel == 32) || (header.bitsPerPixel == 16);
+			if (header.colormapType == 1)
+				TGAColormap.Read(reader, ref header);
+
+			if (!(header.ValidColormapType && header.Valid))
+			{
+				return .Err;
+			}
+
+
+
+			return .Ok;
+		}
+
 	}
 }

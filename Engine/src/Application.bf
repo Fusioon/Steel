@@ -8,6 +8,7 @@ using SteelEngine.ECS.Systems;
 using SteelEngine.ECS.Components;
 using SteelEngine.Console;
 using SteelEngine.Renderer.BGFX;
+using SteelEngine.Resources.Loaders;
 
 namespace SteelEngine
 {
@@ -185,7 +186,8 @@ namespace SteelEngine
 			CreateSystem<Render3DSystem>();
 			CreateSystem<RenderSpriteSystem>();
 			CreateSystem<RenderTextSystem>();
-			CreateSystem<CameraRenderingSystem>();
+			CreateSystem<Camera2DRenderingSystem>();
+			CreateSystem<Camera3DRenderingSystem>();
 			CreateSystem<SoundSystem>();
 			CreateSystem<BehaviorSystem>();
 

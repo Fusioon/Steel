@@ -1,3 +1,5 @@
+using SteelEngine.Renderer;
+
 namespace SteelEngine.ECS.Components
 {
 	public class Drawable3dComponent : BaseComponent
@@ -33,7 +35,7 @@ namespace SteelEngine.ECS.Components
 
 		public void Draw(Matrix44 transform)
 		{
-			SteelEngine.Renderer.RenderServer.DrawMesh(transform, _material, _mesh);
+			SteelEngine.Renderer.RenderServer.Instance.DrawMesh(transform, _material, _mesh);
 		}
 	}
 }
